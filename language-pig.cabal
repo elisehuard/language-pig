@@ -8,13 +8,20 @@ synopsis:            Pig parser in haskell.
 license:             MIT
 license-file:        LICENSE
 author:              Elise Huard
-maintainer:          haskell@elisehuard.be
+maintainer:          elise@jabberwocky.eu
 -- copyright:           
 category:            Language
 build-type:          Simple
 cabal-version:       >=1.8
 
 library
+  hs-source-dirs: src
   -- exposed-modules:     
+  Exposed-modules:      Language.Pig.Parser
+                        Language.Pig.Parser.Parser
   -- other-modules:       
-  build-depends:       base ==4.6.*
+  -- Other-modules:        Language.Pig.Parser.Token
+  build-depends:       base ==4.6.*, Cabal >= 1.16.0
+                       , QuickCheck >= 2 && < 3
+                       , HUnit
+                       , parsec >= 3.1.3
