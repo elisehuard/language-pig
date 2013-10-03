@@ -49,7 +49,7 @@ pigParser :: Parser PigExpr
 pigParser = whiteSpace >> statement
 
 statement :: Parser PigExpr
-statement = do list <- (sepBy1 expression semi)
+statement = do list <- (endBy expression semi)
                return $ head list
 
 expression :: Parser PigExpr
@@ -88,7 +88,7 @@ loadStmt =
 --  Right val -> Right val
 
 parseExpr :: String -> Either ParseError PigExpr
-parseExpr input = parse pigParser "pigFile" "x = LOAD x USING y AS z"
+parseExpr input = parse pigParser "pigFile" "x = LOAD x USING y AS z;"
 
 readPig :: [Char] -> PigExpr
 readPig input = case parseExpr input of
