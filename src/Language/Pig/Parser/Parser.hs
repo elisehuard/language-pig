@@ -1,6 +1,7 @@
 module Language.Pig.Parser.Parser (
-  parseExpr
+  parseString
   , parseFile
+  , PigNode(..)
 ) where
 
 import System.IO
@@ -10,19 +11,20 @@ import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
 
--- source:
--- http://wiki.apache.org/pig/PigLexer
--- http://wiki.apache.org/pig/PigParser
+--import Language.Pig.Parser.AST
 
-data PigExpr = PigAssign String PigStmt
-             deriving (Show)
+data PigNode = PigStmt PigNode
+             | PigQuery PigNode PigNode
+             | PigIdentifier String
+             | PigOpClause PigNode
+             | PigLoadClause PigNode PigNode PigNode
+             | PigFilename String
+             | PigFunc String PigNode
+             | PigArguments [String]
+             | PigSchema String
+             deriving (Show) -- Eq, Read, Data, Typeable ?
 
-data PigVar = PigVar String
-             deriving (Show)
-
-data PigStmt = PigLoadStmt String String String
-             deriving (Show)
-
+specialChar = oneOf "_:" -- TODO only allow double colon
 
 pigLanguageDef :: LanguageDef st
 pigLanguageDef = emptyDef {
@@ -31,7 +33,7 @@ pigLanguageDef = emptyDef {
           , Token.commentLine = "--"
           , Token.nestedComments = True
           , Token.identStart     = letter
-          , Token.identLetter    = alphaNum <|> oneOf "_'():$"
+          , Token.identLetter    = alphaNum <|> specialChar
           , Token.reservedNames = ["LOAD","USING","AS"]
           , Token.reservedOpNames = ["="]
         }
@@ -43,55 +45,70 @@ reserved = Token.reserved lexer
 reservedOp = Token.reservedOp lexer
 integer = Token.integer lexer
 semi = Token.semi lexer
+comma = Token.comma lexer
 whiteSpace = Token.whiteSpace lexer
+parens = Token.parens lexer
 
-pigParser :: Parser PigExpr
-pigParser = whiteSpace >> statement
+pigParser :: Parser PigNode
+pigParser = whiteSpace >> statements -- leading whitespace
 
-statement :: Parser PigExpr
-statement = do list <- (endBy expression semi)
-               return $ head list
+statements :: Parser PigNode
+statements = do list <- (endBy statement semi)
+                return $ head list
 
-expression :: Parser PigExpr
-expression =
-        do var <- identifier
+statement :: Parser PigNode
+statement =
+        do var <- pigIdentifier
            reservedOp "="
-           expr <- statement'
-           return $ PigAssign var expr
+           expr <- opClause
+           return $ PigQuery var expr
 
-statement' :: Parser PigStmt
-statement' =  loadStmt
+pigIdentifier :: Parser PigNode
+pigIdentifier = do value <- identifier
+                   return $ PigIdentifier value
 
-argument :: Parser String
-argument = identifier
+-- TODO: quoted string, func, schema grammar
+pigQuotedString :: (String -> PigNode) -> Parser PigNode
+pigQuotedString constructor = do value <- identifier
+                                 return $ constructor value
 
-loadStmt :: Parser PigStmt
-loadStmt =
+pigFunc :: (String -> PigNode -> PigNode) -> Parser PigNode
+pigFunc constructor = do value <- identifier
+                         arguments <- parens arguments
+                         return $ constructor value arguments
+
+arguments :: Parser PigNode
+arguments = do list <- (sepBy quotedString comma)
+               return $ PigArguments list
+
+quotedString :: Parser String
+quotedString = do char '\''
+                  value <- many $ noneOf "\'" -- doesn't take into account escaped quotes
+                  char '\''
+                  return $ value
+
+pigTupleDef :: (String -> PigNode) -> Parser PigNode
+pigTupleDef constructor = do value <- identifier
+                             return $ constructor value
+
+opClause :: Parser PigNode
+opClause = loadClause
+
+loadClause :: Parser PigNode
+loadClause =
   do reserved "LOAD"
-     file <-  argument
+     file <-  pigQuotedString PigFilename
      reserved "USING"
-     source <- argument
+     source <- pigFunc PigFunc
      reserved "AS"
-     schema <- argument
-     return $ PigLoadStmt file source schema
+     schema <- pigTupleDef PigSchema
+     return $ PigLoadClause file source schema
 
--- statement' :: Parser Stmt
--- statement' = loadStmt
+parseString :: String -> Either ParseError PigNode
+parseString input = parse pigParser "pigParser error" input
 
--- parseString :: String -> Stmt
-
---parseExpr :: String -- ^ the input stream (Pig source code)
---      -> Either String [[String]] -- Either String AST.PigNode ^ Error or AST (type to be defined)
-
---parseExpr input = case parse lexParser "pig" input of
---  Left err -> Left (show err)
---  Right val -> Right val
-
-parseExpr :: String -> Either ParseError PigExpr
-parseExpr input = parse pigParser "pigFile" "x = LOAD x USING y AS z;"
-
-readPig :: [Char] -> PigExpr
-readPig input = case parseExpr input of
+readPig :: [Char] -> PigNode
+readPig input = case parseString input of
     Left msg -> error (show msg)
     Right p -> p
 

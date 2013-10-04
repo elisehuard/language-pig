@@ -1,6 +1,6 @@
 module Language.Pig.Parser
         (
-        PA.parseExpr
+          PA.parseString
         , PA.parseFile
         ) where
 
