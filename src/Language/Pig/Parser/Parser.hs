@@ -22,7 +22,7 @@ data PigNode = PigStmt PigNode
              | PigFunc String PigNode
              | PigArguments [String]
              | PigSchema String
-             deriving (Show) -- Eq, Read, Data, Typeable ?
+             deriving (Show, Eq) -- Read, Data, Typeable ?
 
 specialChar = oneOf "_:" -- TODO only allow double colon
 
@@ -69,7 +69,7 @@ pigIdentifier = do value <- identifier
 
 -- TODO: quoted string, func, schema grammar
 pigQuotedString :: (String -> PigNode) -> Parser PigNode
-pigQuotedString constructor = do value <- identifier
+pigQuotedString constructor = do value <- quotedString
                                  return $ constructor value
 
 pigFunc :: (String -> PigNode -> PigNode) -> Parser PigNode
@@ -85,6 +85,7 @@ quotedString :: Parser String
 quotedString = do char '\''
                   value <- many $ noneOf "\'" -- doesn't take into account escaped quotes
                   char '\''
+                  whiteSpace
                   return $ value
 
 pigTupleDef :: (String -> PigNode) -> Parser PigNode
