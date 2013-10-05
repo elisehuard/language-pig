@@ -21,10 +21,19 @@ data PigNode = PigStmt PigNode
              | PigFilename String
              | PigFunc String PigNode
              | PigArguments [String]
-             | PigSchema String
+             | PigSchema [PigNode]
+             | PigField PigNode PigNode
+             | PigFieldName String
+             | PigFieldType PigNode
+             | PigInt
+             | PigLong
+             | PigFloat
+             | PigDouble
+             | PigCharArray
+             | PigByteArray
              deriving (Show, Eq) -- Read, Data, Typeable ?
 
-specialChar = oneOf "_:" -- TODO only allow double colon
+specialChar = oneOf "_" -- TODO only allow double colon
 
 pigLanguageDef :: LanguageDef st
 pigLanguageDef = emptyDef {
@@ -33,8 +42,8 @@ pigLanguageDef = emptyDef {
           , Token.commentLine = "--"
           , Token.nestedComments = True
           , Token.identStart     = letter
-          , Token.identLetter    = alphaNum <|> specialChar
-          , Token.reservedNames = ["LOAD","USING","AS"]
+          , Token.identLetter    = alphaNum <|> specialChar -- todo allow double colon in identifier: custom parser
+          , Token.reservedNames = ["LOAD", "USING", "AS", "int", "long", "float", "double", "chararray", "bytearray"]
           , Token.reservedOpNames = ["="]
         }
 
@@ -65,7 +74,6 @@ statement =
 pigIdentifier :: Parser PigNode
 pigIdentifier = liftM PigIdentifier $ identifier
 
--- TODO: quoted string, func, schema grammar
 pigQuotedString :: (String -> PigNode) -> Parser PigNode
 pigQuotedString constructor = liftM constructor $ quotedString
 
@@ -84,10 +92,30 @@ quotedString = do char '\''
                   whiteSpace
                   return $ value
 
-pigTupleDef :: (String -> PigNode) -> Parser PigNode
-pigTupleDef constructor = do value <- identifier
-                             return $ constructor value
+pigTupleDef :: Parser PigNode
+pigTupleDef = liftM PigSchema $ parens tupleDef
 
+tupleDef :: Parser [PigNode]
+tupleDef = liftM id $ sepBy field comma
+
+field :: Parser PigNode
+field = do fieldName <- identifier
+           char ':'
+           fieldType <- pigType
+           return $ PigField (PigFieldName fieldName) (PigFieldType fieldType)
+
+pigType :: Parser PigNode
+pigType = pigSimpleType "int" PigInt <|>
+          pigSimpleType "long" PigLong <|>
+          pigSimpleType "float" PigFloat <|>
+          pigSimpleType "double" PigDouble <|>
+          pigSimpleType "chararray" PigCharArray <|>
+          pigSimpleType "bytearray" PigByteArray
+
+pigSimpleType :: String -> PigNode -> Parser PigNode
+pigSimpleType typeString constructor = do reserved typeString
+                                          return $ constructor
+              
 opClause :: Parser PigNode
 opClause = loadClause
 
@@ -98,7 +126,7 @@ loadClause =
      reserved "USING"
      source <- pigFunc PigFunc
      reserved "AS"
-     schema <- pigTupleDef PigSchema
+     schema <- pigTupleDef
      return $ PigLoadClause file source schema
 
 parseString :: String -> Either ParseError PigNode
