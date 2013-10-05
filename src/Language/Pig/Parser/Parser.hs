@@ -53,8 +53,7 @@ pigParser :: Parser PigNode
 pigParser = whiteSpace >> statements -- leading whitespace
 
 statements :: Parser PigNode
-statements = do list <- (endBy statement semi)
-                return $ head list
+statements = liftM head $ endBy statement semi
 
 statement :: Parser PigNode
 statement =
@@ -64,13 +63,11 @@ statement =
            return $ PigQuery var expr
 
 pigIdentifier :: Parser PigNode
-pigIdentifier = do value <- identifier
-                   return $ PigIdentifier value
+pigIdentifier = liftM PigIdentifier $ identifier
 
 -- TODO: quoted string, func, schema grammar
 pigQuotedString :: (String -> PigNode) -> Parser PigNode
-pigQuotedString constructor = do value <- quotedString
-                                 return $ constructor value
+pigQuotedString constructor = liftM constructor $ quotedString
 
 pigFunc :: (String -> PigNode -> PigNode) -> Parser PigNode
 pigFunc constructor = do value <- identifier
@@ -78,8 +75,7 @@ pigFunc constructor = do value <- identifier
                          return $ constructor value arguments
 
 arguments :: Parser PigNode
-arguments = do list <- (sepBy quotedString comma)
-               return $ PigArguments list
+arguments = liftM PigArguments $ sepBy quotedString comma
 
 quotedString :: Parser String
 quotedString = do char '\''
