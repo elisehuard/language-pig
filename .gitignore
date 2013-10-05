@@ -1,5 +1,4 @@
 *~
-Guardfile
 /dist/*
 /parse.txt
 /src/Language/Pig/Parser/Lexer.info
@@ -14,3 +13,4 @@ Guardfile
 /unicode/uc-nl.htm
 /unicode/uc-nl.htm
 /unicode/uc-pc.htm
+*.sw*
