@@ -18,6 +18,7 @@ data PigNode = PigStmt PigNode
              | PigIdentifier String
              | PigOpClause PigNode
              | PigLoadClause PigNode PigNode PigNode
+             | PigForeachClause String PigNode
              | PigFilename String
              | PigFunc String PigNode
              | PigArguments [String]
@@ -25,6 +26,10 @@ data PigNode = PigStmt PigNode
              | PigField PigNode PigNode
              | PigFieldName String
              | PigFieldType PigNode
+             | PigTransforms [PigNode]
+             | PigFlatten String PigNode
+             | PigTupleFieldGlob
+             | PigTuple [PigNode]
              | PigInt
              | PigLong
              | PigFloat
@@ -43,7 +48,9 @@ pigLanguageDef = emptyDef {
           , Token.nestedComments = True
           , Token.identStart     = letter
           , Token.identLetter    = alphaNum <|> specialChar -- todo allow double colon in identifier: custom parser
-          , Token.reservedNames = ["LOAD", "USING", "AS", "int", "long", "float", "double", "chararray", "bytearray"]
+          , Token.reservedNames = ["LOAD", "USING", "AS", 
+                                   "FOREACH", "GENERATE",
+                                   "int", "long", "float", "double", "chararray", "bytearray", "*"]
           , Token.reservedOpNames = ["="]
         }
 
@@ -70,6 +77,28 @@ statement =
            reservedOp "="
            expr <- opClause
            return $ PigQuery var expr
+
+opClause :: Parser PigNode
+opClause = loadClause <|> foreachClause
+
+loadClause :: Parser PigNode
+loadClause =
+  do reserved "LOAD"
+     file <-  pigQuotedString PigFilename
+     reserved "USING"
+     source <- pigFunc PigFunc
+     reserved "AS"
+     schema <- pigTupleDef
+     return $ PigLoadClause file source schema
+
+-- foreach: only the block (outer bag) version
+foreachClause :: Parser PigNode
+foreachClause =
+  do reserved "FOREACH"
+     alias <- identifier
+     reserved "GENERATE"
+     transforms <- sepBy transform comma
+     return $ PigForeachClause alias (PigTransforms transforms)
 
 pigIdentifier :: Parser PigNode
 pigIdentifier = liftM PigIdentifier $ identifier
@@ -116,18 +145,30 @@ pigSimpleType :: String -> PigNode -> Parser PigNode
 pigSimpleType typeString constructor = do reserved typeString
                                           return $ constructor
               
-opClause :: Parser PigNode
-opClause = loadClause
+transform :: Parser PigNode
+transform = flattenTransform <|> tupleFieldGlob
 
-loadClause :: Parser PigNode
-loadClause =
-  do reserved "LOAD"
-     file <-  pigQuotedString PigFilename
-     reserved "USING"
-     source <- pigFunc PigFunc
-     reserved "AS"
-     schema <- pigTupleDef
-     return $ PigLoadClause file source schema
+flattenTransform :: Parser PigNode
+flattenTransform = do reserved "FLATTEN"
+                      argument <- parens identifier
+                      reserved "AS"
+                      schema <- parens tuple
+                      return $ PigFlatten argument schema
+
+-- nonFlattenTransform :: Parser PigNode
+                
+tupleFieldGlob :: Parser PigNode
+tupleFieldGlob = do reserved "*"
+                    return $ PigTupleFieldGlob
+
+tuple :: Parser PigNode
+tuple = do fieldNames <- sepBy name comma
+           return $ PigTuple fieldNames
+
+name :: Parser PigNode
+name = liftM PigFieldName $ identifier
+
+-- top-level parse functions
 
 parseString :: String -> Either ParseError PigNode
 parseString input = parse pigParser "pigParser error" input
@@ -137,7 +178,6 @@ readPig input = case parseString input of
     Left msg -> error (show msg)
     Right p -> p
 
--- | Parse the given file.
 parseFile :: FilePath -> IO String
 parseFile filename =
   do
