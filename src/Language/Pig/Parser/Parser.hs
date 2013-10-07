@@ -18,7 +18,7 @@ data PigNode = PigStmt PigNode
              | PigIdentifier String
              | PigOpClause PigNode
              | PigLoadClause PigNode PigNode PigNode
-             | PigForeachClause String PigNode
+             | PigForeachClause PigNode PigNode
              | PigFilename String
              | PigFunc String PigNode
              | PigArguments [PigNode]
@@ -119,7 +119,7 @@ loadClause =
 foreachClause :: Parser PigNode
 foreachClause =
   do reserved "FOREACH"
-     alias <- identifier
+     alias <- pigIdentifier
      reserved "GENERATE"
      transforms <- sepBy transform comma
      return $ PigForeachClause alias (PigTransforms transforms)

@@ -15,19 +15,19 @@ parserSuite = testGroup "Parser"
                                "Right (PigQuery (PigIdentifier \"users\") (PigLoadClause (PigFilename \"sorted_log/user_registration/$date/*\") (PigFunc \"LogStorage\" (PigArguments [])) (PigSchema [PigField (PigFieldName \"date\") (PigFieldType PigCharArray),PigField (PigFieldName \"time\") (PigFieldType PigCharArray),PigField (PigFieldName \"user_id\") (PigFieldType PigLong)])))")
 
    , testCase "foreach stmt with flatten" (testStmt "users = FOREACH users GENERATE FLATTEN(group) AS (date, herd);" 
-                                                    "Right (PigQuery (PigIdentifier \"users\") (PigForeachClause \"users\" (PigTransforms [PigFlatten \"group\" (PigTuple [PigFieldName \"date\",PigFieldName \"herd\"])])))")
+                                                    "Right (PigQuery (PigIdentifier \"users\") (PigForeachClause (PigIdentifier \"users\") (PigTransforms [PigFlatten \"group\" (PigTuple [PigFieldName \"date\",PigFieldName \"herd\"])])))")
 
    , testCase "foreach stmt with expression" (testStmt "users = FOREACH users GENERATE *, ((user_id % 100) / 10) AS cohort;"
-                                                       "Right (PigQuery (PigIdentifier \"users\") (PigForeachClause \"users\" (PigTransforms [PigTupleFieldGlob,PigExpressionTransform (PigBinary PigDivide (PigBinary PigModulo (PigFieldName \"user_id\") (PigNumber (Left 100))) (PigNumber (Left 10))) (PigFieldName \"cohort\")])))")
+                                                       "Right (PigQuery (PigIdentifier \"users\") (PigForeachClause (PigIdentifier \"users\") (PigTransforms [PigTupleFieldGlob,PigExpressionTransform (PigBinary PigDivide (PigBinary PigModulo (PigFieldName \"user_id\") (PigNumber (Left 100))) (PigNumber (Left 10))) (PigFieldName \"cohort\")])))")
 
    , testCase "foreach stmt with ternary if-then-else" (testStmt "users = FOREACH users GENERATE *, (cohort <= 4 ? '04' : '59') AS herd;"
-                                                                 "Right (PigQuery (PigIdentifier \"users\") (PigForeachClause \"users\" (PigTransforms [PigTupleFieldGlob,PigExpressionTransform (PigBinCond (PigBinary PigLessEqual (PigFieldName \"cohort\") (PigNumber (Left 4))) (PigStringLiteral \"04\") (PigStringLiteral \"59\")) (PigFieldName \"herd\")])))")
+                                                                 "Right (PigQuery (PigIdentifier \"users\") (PigForeachClause (PigIdentifier \"users\") (PigTransforms [PigTupleFieldGlob,PigExpressionTransform (PigBinCond (PigBinary PigLessEqual (PigFieldName \"cohort\") (PigNumber (Left 4))) (PigStringLiteral \"04\") (PigStringLiteral \"59\")) (PigFieldName \"herd\")])))")
    , testCase "foreach stmt with flatten and function" (testStmt "report = FOREACH report GENERATE FLATTEN(group) AS (date, herd), COUNT(active_users) AS day_visits;"
-                                                                 "Right (PigQuery (PigIdentifier \"report\") (PigForeachClause \"report\" (PigTransforms [PigFlatten \"group\" (PigTuple [PigFieldName \"date\",PigFieldName \"herd\"]),PigExpressionTransform (PigFunc \"COUNT\" (PigArguments [PigFieldName \"active_users\"])) (PigFieldName \"day_visits\")])))")
+                                                                 "Right (PigQuery (PigIdentifier \"report\") (PigForeachClause (PigIdentifier \"report\") (PigTransforms [PigFlatten \"group\" (PigTuple [PigFieldName \"date\",PigFieldName \"herd\"]),PigExpressionTransform (PigFunc \"COUNT\" (PigArguments [PigFieldName \"active_users\"])) (PigFieldName \"day_visits\")])))")
+   , testCase "foreach stmt with qualified field names" (testStmt "report = FOREACH report GENERATE report::date AS date, report::herd AS herd, report::day_visits AS day_visits, visits::visits AS visits;"
+                                                                  "")
                                                 ]
 {-
-report = FOREACH report GENERATE FLATTEN(group) AS (date, herd), COUNT(active_users) AS day_visits;
-DESCRIBE report;
 report = FOREACH report GENERATE report::date AS date, report::herd AS herd, report::day_visits AS day_visits, visits::visits AS visits;
 report = FOREACH report GENERATE '$date' AS date, *;
 -}
