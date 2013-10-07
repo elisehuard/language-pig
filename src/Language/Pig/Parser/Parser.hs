@@ -21,7 +21,7 @@ data PigNode = PigStmt PigNode
              | PigForeachClause String PigNode
              | PigFilename String
              | PigFunc String PigNode
-             | PigArguments [String]
+             | PigArguments [PigNode]
              | PigSchema [PigNode]
              | PigField PigNode PigNode
              | PigFieldName String
@@ -35,6 +35,7 @@ data PigNode = PigStmt PigNode
              | PigBinary PigNode PigNode PigNode
              | PigBooleanBinary PigNode PigNode PigNode
              | PigBinCond PigNode PigNode PigNode
+             | PigString String
              | PigInt
              | PigLong
              | PigFloat
@@ -135,7 +136,11 @@ pigFunc = do value <- identifier
              return $ PigFunc value arguments
 
 arguments :: Parser PigNode
-arguments = liftM PigArguments $ sepBy quotedString comma
+arguments = liftM PigArguments $ sepBy argument comma
+
+argument :: Parser PigNode
+argument = (liftM PigString quotedString) <|> 
+           (liftM PigFieldName identifier)
 
 quotedString :: Parser String
 quotedString = do char '\''
@@ -184,7 +189,7 @@ expressionTransform = do expr <- expression
                          return $ PigExpressionTransform expr (PigFieldName fieldName)
 
 expression :: Parser PigNode
-expression = tupleFieldGlob <|> generalExpression <|> pigFunc
+expression = tupleFieldGlob <|> pigFunc <|> generalExpression
 
 fieldExpression :: Parser PigNode
 fieldExpression = name

@@ -21,7 +21,10 @@ parserSuite = testGroup "Parser"
                                                        "Right (PigQuery (PigIdentifier \"users\") (PigForeachClause \"users\" (PigTransforms [PigTupleFieldGlob,PigExpressionTransform (PigBinary PigDivide (PigBinary PigModulo (PigFieldName \"user_id\") (PigNumber (Left 100))) (PigNumber (Left 10))) (PigFieldName \"cohort\")])))")
 
    , testCase "foreach stmt with ternary if-then-else" (testStmt "users = FOREACH users GENERATE *, (cohort <= 4 ? '04' : '59') AS herd;"
-                                                                 "Right (PigQuery (PigIdentifier \"users\") (PigForeachClause \"users\" (PigTransforms [PigTupleFieldGlob,PigExpressionTransform (PigBinCond (PigBinary PigLessEqual (PigFieldName \"cohort\") (PigNumber (Left 4))) (PigStringLiteral \"04\") (PigStringLiteral \"59\")) (PigFieldName \"herd\")])))")]
+                                                                 "Right (PigQuery (PigIdentifier \"users\") (PigForeachClause \"users\" (PigTransforms [PigTupleFieldGlob,PigExpressionTransform (PigBinCond (PigBinary PigLessEqual (PigFieldName \"cohort\") (PigNumber (Left 4))) (PigStringLiteral \"04\") (PigStringLiteral \"59\")) (PigFieldName \"herd\")])))")
+   , testCase "foreach stmt with flatten and function" (testStmt "report = FOREACH report GENERATE FLATTEN(group) AS (date, herd), COUNT(active_users) AS day_visits;"
+                                                                 "Right (PigQuery (PigIdentifier \"report\") (PigForeachClause \"report\" (PigTransforms [PigFlatten \"group\" (PigTuple [PigFieldName \"date\",PigFieldName \"herd\"]),PigExpressionTransform (PigFunc \"COUNT\" (PigArguments [PigFieldName \"active_users\"])) (PigFieldName \"day_visits\")])))")
+                                                ]
 {-
 report = FOREACH report GENERATE FLATTEN(group) AS (date, herd), COUNT(active_users) AS day_visits;
 DESCRIBE report;
