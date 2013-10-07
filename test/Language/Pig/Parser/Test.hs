@@ -13,10 +13,11 @@ parserSuite :: Test
 parserSuite = testGroup "Parser"
    [testCase "load1" (testStmt "users = LOAD 'sorted_log/user_registration/$date/*' USING LogStorage() AS (date:chararray, time:chararray, user_id:long);" 
                                "Right (PigQuery (PigIdentifier \"users\") (PigLoadClause (PigFilename \"sorted_log/user_registration/$date/*\") (PigFunc \"LogStorage\" (PigArguments [])) (PigSchema [PigField (PigFieldName \"date\") (PigFieldType PigCharArray),PigField (PigFieldName \"time\") (PigFieldType PigCharArray),PigField (PigFieldName \"user_id\") (PigFieldType PigLong)])))")
-   , testCase "foreach stmt" (testStmt "users = FOREACH users GENERATE FLATTEN(group) AS (date, herd);" 
-                                       "Right (PigQuery (PigIdentifier \"users\") (PigForeachClause \"users\" (PigTransforms [PigFlatten \"group\" (PigTuple [PigFieldName \"date\",PigFieldName \"herd\"])])))")]
+   , testCase "foreach stmt with flatten" (testStmt "users = FOREACH users GENERATE FLATTEN(group) AS (date, herd);" 
+                                                    "Right (PigQuery (PigIdentifier \"users\") (PigForeachClause \"users\" (PigTransforms [PigFlatten \"group\" (PigTuple [PigFieldName \"date\",PigFieldName \"herd\"])])))")
+   , testCase "foreach stmt with expression" (testStmt "users = FOREACH users GENERATE *, ((user_id % 100) / 10) AS cohort;"
+                                                       "Right (PigQuery (PigIdentifier \"users\") (PigForeachClause \"users\" (PigTransforms [PigTupleFieldGlob,PigExpressionTransform (PigBinary PigDivide (PigBinary PigModulo (PigFieldName \"user_id\") (PigNumber (Left 100))) (PigNumber (Left 10))) (PigFieldName \"cohort\")])))")]
 {-
-users = FOREACH users GENERATE *, ((user_id % 100) / 10) AS cohort;
 users = FOREACH users GENERATE *, (cohort <= 4 ? '04' : '59') AS herd;
 report = FOREACH report GENERATE FLATTEN(group) AS (date, herd), COUNT(active_users) AS day_visits;
 DESCRIBE report;

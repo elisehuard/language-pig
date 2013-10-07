@@ -27,15 +27,26 @@ data PigNode = PigStmt PigNode
              | PigFieldName String
              | PigFieldType PigNode
              | PigTransforms [PigNode]
-             | PigFlatten String PigNode
+             | PigFlatten String PigNode -- foreach flatten transform
              | PigTupleFieldGlob
              | PigTuple [PigNode]
+             | PigExpressionTransform PigNode PigNode -- foreach calculates expression
+             | PigExpression PigNode
+             | PigBinary PigNode PigNode PigNode
              | PigInt
              | PigLong
              | PigFloat
              | PigDouble
              | PigCharArray
              | PigByteArray
+             | PigAdd
+             | PigSubtract
+             | PigMultiply
+             | PigDivide
+             | PigModulo
+             | PigNeg
+             | PigNumber (Either Integer Double)
+             | PigStringLiteral String
              deriving (Show, Eq) -- Read, Data, Typeable ?
 
 specialChar = oneOf "_" -- TODO only allow double colon
@@ -49,9 +60,9 @@ pigLanguageDef = emptyDef {
           , Token.identStart     = letter
           , Token.identLetter    = alphaNum <|> specialChar -- todo allow double colon in identifier: custom parser
           , Token.reservedNames = ["LOAD", "USING", "AS", 
-                                   "FOREACH", "GENERATE",
+                                   "FOREACH", "GENERATE", "FLATTEN",
                                    "int", "long", "float", "double", "chararray", "bytearray", "*"]
-          , Token.reservedOpNames = ["="]
+          , Token.reservedOpNames = ["=", "+", "-", "*", "/", "%"]
         }
 
 lexer = Token.makeTokenParser pigLanguageDef
@@ -60,6 +71,7 @@ identifier = Token.identifier lexer
 reserved = Token.reserved lexer
 reservedOp = Token.reservedOp lexer
 integer = Token.integer lexer
+naturalOrFloat = Token.naturalOrFloat lexer
 semi = Token.semi lexer
 comma = Token.comma lexer
 whiteSpace = Token.whiteSpace lexer
@@ -69,7 +81,7 @@ pigParser :: Parser PigNode
 pigParser = whiteSpace >> statements -- leading whitespace
 
 statements :: Parser PigNode
-statements = liftM head $ endBy statement semi
+statements = liftM head $ endBy statement semi -- TODO handle multiple statements
 
 statement :: Parser PigNode
 statement =
@@ -86,7 +98,7 @@ loadClause =
   do reserved "LOAD"
      file <-  pigQuotedString PigFilename
      reserved "USING"
-     source <- pigFunc PigFunc
+     source <- pigFunc
      reserved "AS"
      schema <- pigTupleDef
      return $ PigLoadClause file source schema
@@ -106,10 +118,10 @@ pigIdentifier = liftM PigIdentifier $ identifier
 pigQuotedString :: (String -> PigNode) -> Parser PigNode
 pigQuotedString constructor = liftM constructor $ quotedString
 
-pigFunc :: (String -> PigNode -> PigNode) -> Parser PigNode
-pigFunc constructor = do value <- identifier
-                         arguments <- parens arguments
-                         return $ constructor value arguments
+pigFunc :: Parser PigNode
+pigFunc = do value <- identifier
+             arguments <- parens arguments
+             return $ PigFunc value arguments
 
 arguments :: Parser PigNode
 arguments = liftM PigArguments $ sepBy quotedString comma
@@ -146,7 +158,7 @@ pigSimpleType typeString constructor = do reserved typeString
                                           return $ constructor
               
 transform :: Parser PigNode
-transform = flattenTransform <|> tupleFieldGlob
+transform = flattenTransform <|> tupleFieldGlob <|> expressionTransform
 
 flattenTransform :: Parser PigNode
 flattenTransform = do reserved "FLATTEN"
@@ -155,8 +167,38 @@ flattenTransform = do reserved "FLATTEN"
                       schema <- parens tuple
                       return $ PigFlatten argument schema
 
--- nonFlattenTransform :: Parser PigNode
-                
+expressionTransform :: Parser PigNode
+expressionTransform = do expr <- expression
+                         reserved "AS"
+                         fieldName <- identifier
+                         return $ PigExpressionTransform expr (PigFieldName fieldName)
+
+expression :: Parser PigNode
+expression = tupleFieldGlob <|> generalExpression <|> pigFunc
+
+fieldExpression :: Parser PigNode
+fieldExpression = name
+
+-- general expression:
+-- fieldExpression or literal or function or binary operation (+-*/%) or bincond (?:)
+-- bincond: boolean expression (==, !=, >, <, >=, <=) (and, or, not)
+generalExpression :: Parser PigNode
+generalExpression = parens calculation
+
+calculation :: Parser PigNode
+calculation = buildExpressionParser pigOperators pigTerm
+
+pigOperators = [-- [Prefix (reservedOp "-" >> return (PigNeg))],
+               [Infix (reservedOp "*" >> return (PigBinary PigMultiply)) AssocLeft]
+               ,[Infix (reservedOp "/" >> return (PigBinary PigDivide)) AssocLeft]
+               ,[Infix (reservedOp "%" >> return (PigBinary PigModulo)) AssocLeft]
+               ,[Infix (reservedOp "+" >> return (PigBinary PigAdd)) AssocLeft]
+               ,[Infix (reservedOp "-" >> return (PigBinary PigSubtract)) AssocLeft]]
+
+pigTerm = (liftM PigStringLiteral $ quotedString) <|> number <|> name <|> generalExpression
+
+number = liftM PigNumber $ naturalOrFloat -- for now - could be naturalOrFloat for inclusion
+
 tupleFieldGlob :: Parser PigNode
 tupleFieldGlob = do reserved "*"
                     return $ PigTupleFieldGlob
