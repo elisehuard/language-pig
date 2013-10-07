@@ -165,8 +165,7 @@ pigType = pigSimpleType "int" PigInt <|>
           pigSimpleType "bytearray" PigByteArray
 
 pigSimpleType :: String -> PigNode -> Parser PigNode
-pigSimpleType typeString constructor = do reserved typeString
-                                          return $ constructor
+pigSimpleType typeString constructor = reserved typeString >> return constructor
               
 transform :: Parser PigNode
 transform = flattenTransform <|> tupleFieldGlob <|> expressionTransform
@@ -241,12 +240,10 @@ relation = (reservedOp ">" >> return PigGreater) <|>
            (reservedOp "!=" >> return PigNotEqual)
 
 tupleFieldGlob :: Parser PigNode
-tupleFieldGlob = do reserved "*"
-                    return $ PigTupleFieldGlob
+tupleFieldGlob = reserved "*" >> return PigTupleFieldGlob
 
 tuple :: Parser PigNode
-tuple = do fieldNames <- sepBy name comma
-           return $ PigTuple fieldNames
+tuple = liftM PigTuple $ sepBy name comma
 
 name :: Parser PigNode
 name = liftM PigFieldName $ identifier
