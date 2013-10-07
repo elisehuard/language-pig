@@ -33,6 +33,8 @@ data PigNode = PigStmt PigNode
              | PigExpressionTransform PigNode PigNode -- foreach calculates expression
              | PigExpression PigNode
              | PigBinary PigNode PigNode PigNode
+             | PigBooleanBinary PigNode PigNode PigNode
+             | PigBinCond PigNode PigNode PigNode
              | PigInt
              | PigLong
              | PigFloat
@@ -44,9 +46,18 @@ data PigNode = PigStmt PigNode
              | PigMultiply
              | PigDivide
              | PigModulo
-             | PigNeg
+             | PigNeg PigNode
              | PigNumber (Either Integer Double)
              | PigStringLiteral String
+             | PigAnd
+             | PigOr
+             | PigNot PigNode
+             | PigEqual
+             | PigNotEqual
+             | PigGreater
+             | PigLess
+             | PigGreaterEqual
+             | PigLessEqual
              deriving (Show, Eq) -- Read, Data, Typeable ?
 
 specialChar = oneOf "_" -- TODO only allow double colon
@@ -62,7 +73,7 @@ pigLanguageDef = emptyDef {
           , Token.reservedNames = ["LOAD", "USING", "AS", 
                                    "FOREACH", "GENERATE", "FLATTEN",
                                    "int", "long", "float", "double", "chararray", "bytearray", "*"]
-          , Token.reservedOpNames = ["=", "+", "-", "*", "/", "%"]
+          , Token.reservedOpNames = ["=", "+", "-", "*", "/", "%", "?", ":"]
         }
 
 lexer = Token.makeTokenParser pigLanguageDef
@@ -185,10 +196,11 @@ fieldExpression = name
 generalExpression :: Parser PigNode
 generalExpression = parens calculation
 
+-- conditional is ternary operator, so lookahead to try and parse it first.
 calculation :: Parser PigNode
-calculation = buildExpressionParser pigOperators pigTerm
+calculation = try(conditional) <|> buildExpressionParser pigOperators pigTerm
 
-pigOperators = [-- [Prefix (reservedOp "-" >> return (PigNeg))],
+pigOperators = [[Prefix (reservedOp "-" >> return (PigNeg))],
                [Infix (reservedOp "*" >> return (PigBinary PigMultiply)) AssocLeft]
                ,[Infix (reservedOp "/" >> return (PigBinary PigDivide)) AssocLeft]
                ,[Infix (reservedOp "%" >> return (PigBinary PigModulo)) AssocLeft]
@@ -198,6 +210,35 @@ pigOperators = [-- [Prefix (reservedOp "-" >> return (PigNeg))],
 pigTerm = (liftM PigStringLiteral $ quotedString) <|> number <|> name <|> generalExpression
 
 number = liftM PigNumber $ naturalOrFloat -- for now - could be naturalOrFloat for inclusion
+
+conditional = do cond <- booleanExpression
+                 reserved "?"
+                 ifTrue <- calculation
+                 reserved ":"
+                 ifFalse <- calculation
+                 return $ PigBinCond cond ifTrue ifFalse
+
+booleanExpression = buildExpressionParser booleanOperators booleanTerm
+
+booleanTerm = parens booleanExpression
+          <|> comparisonExpression
+
+booleanOperators = [ [Prefix (reservedOp "not" >> return (PigNot))]
+                   , [Infix  (reservedOp "and" >> return (PigBooleanBinary PigAnd)) AssocLeft]
+                   , [Infix  (reservedOp "or"  >> return (PigBooleanBinary PigOr)) AssocLeft]]
+
+comparisonExpression = do term1 <- pigTerm
+                          operator <- relation
+                          term2 <- pigTerm
+                          return $ PigBinary operator term1 term2
+
+-- bincond: boolean expression (==, !=, >, <, >=, <=) (and, or, not)
+relation = (reservedOp ">" >> return PigGreater) <|>
+           (reservedOp "<" >> return PigLess) <|>
+           (reservedOp "<=" >> return PigLessEqual) <|>
+           (reservedOp ">=" >> return PigGreaterEqual) <|>
+           (reservedOp "==" >> return PigEqual) <|>
+           (reservedOp "!=" >> return PigNotEqual)
 
 tupleFieldGlob :: Parser PigNode
 tupleFieldGlob = do reserved "*"
