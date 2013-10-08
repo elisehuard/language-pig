@@ -24,8 +24,10 @@ data PigNode = PigStmt PigNode
              | PigGroupClause PigNode PigNode
              | PigDefineUDF PigNode PigNode PigNode
              | PigStreamClause PigNode PigNode PigNode
+             | PigStore PigNode PigNode PigNode
              | PigShip PigNode
              | PigFilename String
+             | PigDirectory String
              | PigExec String
              | PigPath String
              | PigFunc String PigNode
@@ -87,6 +89,7 @@ pigLanguageDef = emptyDef {
                                    "DESCRIBE", "SHIP",
                                    "define",
                                    "STREAM", "THROUGH",
+                                   "STORE", "INTO", "USING",
                                    "int", "long", "float", "double", "chararray", "bytearray", "*"]
           , Token.reservedOpNames = ["=", "+", "-", "*", "/", "%", "?", ":"]
         }
@@ -113,7 +116,7 @@ statements :: Parser PigNode
 statements = liftM head $ endBy statement semi -- TODO handle multiple statements
 
 statement :: Parser PigNode
-statement = query <|> describe <|> define
+statement = query <|> describe <|> define <|> store
 
 query :: Parser PigNode
 query = do var <- pigVar
@@ -132,6 +135,15 @@ define = do reserved "define"
             command <- executable
             ship <- shipClause -- could be input, output, ship, cache, stderr in full pig grammar
             return $ PigDefineUDF alias command ship 
+
+store :: Parser PigNode
+store = do reserved "STORE"
+           alias <- pigVar
+           reserved "INTO"
+           output <- pigQuotedString PigDirectory
+           reserved "USING"
+           func <- pigFunc
+           return $ PigStore alias output func
 
 
 opClause :: Parser PigNode
@@ -279,8 +291,8 @@ generalExpression = parens calculation
 calculation :: Parser PigNode
 calculation = try(conditional) <|> buildExpressionParser pigOperators pigTerm
 
-pigOperators = [[Prefix (reservedOp "-" >> return (PigNeg))],
-               [Infix (reservedOp "*" >> return (PigBinary PigMultiply)) AssocLeft]
+pigOperators = [[Prefix (reservedOp "-" >> return (PigNeg))]
+               ,[Infix (reservedOp "*" >> return (PigBinary PigMultiply)) AssocLeft]
                ,[Infix (reservedOp "/" >> return (PigBinary PigDivide)) AssocLeft]
                ,[Infix (reservedOp "%" >> return (PigBinary PigModulo)) AssocLeft]
                ,[Infix (reservedOp "+" >> return (PigBinary PigAdd)) AssocLeft]

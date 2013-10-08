@@ -34,16 +34,24 @@ parserSuite = testGroup "Parser"
 
    , testCase "join stmt" (testStmt "active_users = JOIN users BY user_id, active_users BY user_id;"
                                     "Right (PigQuery (PigIdentifier \"active_users\") (PigInnerJoinClause [PigJoin \"users\" \"user_id\",PigJoin \"active_users\" \"user_id\"]))")
+
    , testCase "group stmt by one field" (testStmt "visits = GROUP active_users BY herd;"
                                      "Right (PigQuery (PigIdentifier \"visits\") (PigGroupClause (PigIdentifier \"active_users\") (PigFieldName \"herd\")))")
+
    , testCase "group stmt by several fields" (testStmt "report = GROUP active_users BY (date, herd);"
                                                        "Right (PigQuery (PigIdentifier \"report\") (PigGroupClause (PigIdentifier \"active_users\") (PigTuple [PigFieldName \"date\",PigFieldName \"herd\"])))")
+
    , testCase "describe stmt" (testStmt "DESCRIBE visits;"
                                         "Right (PigDescribe (PigIdentifier \"visits\"))")
+
    , testCase "define stmt" (testStmt "define RESOLVE `python delta.py $date` SHIP('delta.py');"
                                       "Right (PigDefineUDF (PigIdentifier \"RESOLVE\") (PigExec \"python delta.py $date\") (PigShip (PigPath \"delta.py\")))")
+
    , testCase "stream stmt" (testStmt "report = STREAM report THROUGH RESOLVE AS (day:chararray, herd:chararray, day_visits:int, visits:int);"
                                       "Right (PigQuery (PigIdentifier \"report\") (PigStreamClause (PigIdentifier \"report\") (PigIdentifier \"RESOLVE\") (PigSchema [PigField (PigFieldName \"day\") (PigFieldType PigCharArray),PigField (PigFieldName \"herd\") (PigFieldType PigCharArray),PigField (PigFieldName \"day_visits\") (PigFieldType PigInt),PigField (PigFieldName \"visits\") (PigFieldType PigInt)])))")
+
+   , testCase "store stmt" (testStmt "STORE report INTO '$output' USING ColumnStorage(',');"
+                                     "Right (PigStore (PigIdentifier \"report\") (PigDirectory \"$output\") (PigFunc \"ColumnStorage\" (PigArguments [PigString \",\"])))")
                                                 ]
 
 
