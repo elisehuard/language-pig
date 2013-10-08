@@ -38,8 +38,10 @@ parserSuite = testGroup "Parser"
                                      "Right (PigQuery (PigIdentifier \"visits\") (PigGroupClause (PigIdentifier \"active_users\") (PigFieldName \"herd\")))")
    , testCase "group stmt by several fields" (testStmt "report = GROUP active_users BY (date, herd);"
                                                        "Right (PigQuery (PigIdentifier \"report\") (PigGroupClause (PigIdentifier \"active_users\") (PigTuple [PigFieldName \"date\",PigFieldName \"herd\"])))")
-
-
+   , testCase "describe stmt" (testStmt "DESCRIBE visits;"
+                                        "Right (PigDescribe (PigIdentifier \"visits\"))")
+   , testCase "define stmt" (testStmt "define RESOLVE `python delta.py $date` SHIP('delta.py');"
+                                      "Right (PigDefineUDF (PigIdentifier \"RESOLVE\") (PigExec \"python delta.py $date\") (PigShip (PigPath \"delta.py\")))")
                                                 ]
 
 

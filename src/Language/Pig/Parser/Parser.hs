@@ -15,13 +15,18 @@ import qualified Text.ParserCombinators.Parsec.Token as Token
 
 data PigNode = PigStmt PigNode
              | PigQuery PigNode PigNode
+             | PigDescribe PigNode
              | PigIdentifier String
              | PigOpClause PigNode
              | PigLoadClause PigNode PigNode PigNode
              | PigForeachClause PigNode PigNode
              | PigInnerJoinClause [PigNode]
              | PigGroupClause PigNode PigNode
+             | PigDefineUDF PigNode PigNode PigNode
+             | PigShip PigNode
              | PigFilename String
+             | PigExec String
+             | PigPath String
              | PigFunc String PigNode
              | PigArguments [PigNode]
              | PigSchema [PigNode]
@@ -74,9 +79,12 @@ pigLanguageDef = emptyDef {
           , Token.nestedComments = True
           , Token.identStart     = letter
           , Token.identLetter    = alphaNum <|> specialChar -- todo allow double colon in identifier: custom parser
-          , Token.reservedNames = ["LOAD", "USING", "AS", 
+          , Token.reservedNames = ["LOAD", "USING", "AS", -- todo case insensitivity of these keywords
                                    "FOREACH", "GENERATE", "FLATTEN",
                                    "JOIN", "BY",
+                                   "GROUP",
+                                   "DESCRIBE", "SHIP",
+                                   "define",
                                    "int", "long", "float", "double", "chararray", "bytearray", "*"]
           , Token.reservedOpNames = ["=", "+", "-", "*", "/", "%", "?", ":"]
         }
@@ -103,11 +111,26 @@ statements :: Parser PigNode
 statements = liftM head $ endBy statement semi -- TODO handle multiple statements
 
 statement :: Parser PigNode
-statement =
-        do var <- pigVar
+statement = query <|> describe <|> define
+
+query :: Parser PigNode
+query = do var <- pigVar
            reservedOp "="
            expr <- opClause
            return $ PigQuery var expr
+
+describe :: Parser PigNode
+describe = do reserved "DESCRIBE"
+              variable <- pigVar
+              return $ PigDescribe variable
+
+define :: Parser PigNode
+define = do reserved "define"
+            alias <- pigVar
+            command <- executable
+            ship <- shipClause -- could be input, output, ship, cache, stderr in full pig grammar
+            return $ PigDefineUDF alias command ship 
+
 
 opClause :: Parser PigNode
 opClause = loadClause
@@ -154,6 +177,11 @@ joinTable = do table <- pigIdentifier
                fieldName <- pigIdentifier
                return $ PigJoin table fieldName
 
+shipClause :: Parser PigNode
+shipClause = do reserved "SHIP"
+                path <- parens quotedString
+                return $ PigShip (PigPath path)
+
 pigVar :: Parser PigNode
 pigVar = liftM PigIdentifier $ pigIdentifier
 
@@ -178,6 +206,13 @@ quotedString = do char '\''
                   char '\''
                   whiteSpace
                   return $ value
+
+executable :: Parser PigNode
+executable = do char '`'
+                value <- many $ noneOf "`" -- doesn't take into account escaped quotes
+                char '`'
+                whiteSpace
+                return $ PigExec value
 
 pigTupleDef :: Parser PigNode
 pigTupleDef = liftM PigSchema $ parens tupleDef
