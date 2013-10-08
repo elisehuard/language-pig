@@ -20,6 +20,7 @@ data PigNode = PigStmt PigNode
              | PigLoadClause PigNode PigNode PigNode
              | PigForeachClause PigNode PigNode
              | PigInnerJoinClause [PigNode]
+             | PigGroupClause PigNode PigNode
              | PigFilename String
              | PigFunc String PigNode
              | PigArguments [PigNode]
@@ -109,7 +110,10 @@ statement =
            return $ PigQuery var expr
 
 opClause :: Parser PigNode
-opClause = loadClause <|> foreachClause <|> innerJoinClause
+opClause = loadClause
+       <|> foreachClause
+       <|> innerJoinClause
+       <|> groupClause
 
 loadClause :: Parser PigNode
 loadClause =
@@ -135,6 +139,14 @@ innerJoinClause =
   do reserved "JOIN"
      joins <- sepBy joinTable comma
      return $ PigInnerJoinClause joins
+
+groupClause :: Parser PigNode
+groupClause =
+  do reserved "GROUP"
+     alias <- pigVar
+     reserved "BY"
+     columns <- tuple <|> name
+     return $ PigGroupClause alias columns
 
 joinTable :: Parser PigNode
 joinTable = do table <- pigIdentifier
@@ -197,7 +209,7 @@ flattenTransform :: Parser PigNode
 flattenTransform = do reserved "FLATTEN"
                       argument <- parens pigIdentifier
                       reserved "AS"
-                      schema <- parens tuple
+                      schema <- tuple
                       return $ PigFlatten argument schema
 
 expressionTransform :: Parser PigNode
@@ -263,7 +275,7 @@ tupleFieldGlob :: Parser PigNode
 tupleFieldGlob = reserved "*" >> return PigTupleFieldGlob
 
 tuple :: Parser PigNode
-tuple = liftM PigTuple $ sepBy name comma
+tuple = liftM PigTuple $ parens (sepBy name comma)
 
 name :: Parser PigNode
 name = liftM PigFieldName $ pigIdentifier

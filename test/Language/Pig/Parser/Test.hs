@@ -34,6 +34,12 @@ parserSuite = testGroup "Parser"
 
    , testCase "join stmt" (testStmt "active_users = JOIN users BY user_id, active_users BY user_id;"
                                     "Right (PigQuery (PigIdentifier \"active_users\") (PigInnerJoinClause [PigJoin \"users\" \"user_id\",PigJoin \"active_users\" \"user_id\"]))")
+   , testCase "group stmt by one field" (testStmt "visits = GROUP active_users BY herd;"
+                                     "Right (PigQuery (PigIdentifier \"visits\") (PigGroupClause (PigIdentifier \"active_users\") (PigFieldName \"herd\")))")
+   , testCase "group stmt by several fields" (testStmt "report = GROUP active_users BY (date, herd);"
+                                                       "Right (PigQuery (PigIdentifier \"report\") (PigGroupClause (PigIdentifier \"active_users\") (PigTuple [PigFieldName \"date\",PigFieldName \"herd\"])))")
+
+
                                                 ]
 
 
