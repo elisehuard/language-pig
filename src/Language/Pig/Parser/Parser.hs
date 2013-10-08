@@ -89,6 +89,9 @@ comma = Token.comma lexer
 whiteSpace = Token.whiteSpace lexer
 parens = Token.parens lexer
 
+-- TODO: create parser to handle double colon.
+pigIdentifier = identifier
+
 pigParser :: Parser PigNode
 pigParser = whiteSpace >> statements -- leading whitespace
 
@@ -97,7 +100,7 @@ statements = liftM head $ endBy statement semi -- TODO handle multiple statement
 
 statement :: Parser PigNode
 statement =
-        do var <- pigIdentifier
+        do var <- pigVar
            reservedOp "="
            expr <- opClause
            return $ PigQuery var expr
@@ -119,13 +122,13 @@ loadClause =
 foreachClause :: Parser PigNode
 foreachClause =
   do reserved "FOREACH"
-     alias <- pigIdentifier
+     alias <- pigVar
      reserved "GENERATE"
      transforms <- sepBy transform comma
      return $ PigForeachClause alias (PigTransforms transforms)
 
-pigIdentifier :: Parser PigNode
-pigIdentifier = liftM PigIdentifier $ identifier
+pigVar :: Parser PigNode
+pigVar = liftM PigIdentifier $ pigIdentifier
 
 pigQuotedString :: (String -> PigNode) -> Parser PigNode
 pigQuotedString constructor = liftM constructor $ quotedString
@@ -140,7 +143,7 @@ arguments = liftM PigArguments $ sepBy argument comma
 
 argument :: Parser PigNode
 argument = (liftM PigString quotedString) <|> 
-           (liftM PigFieldName identifier)
+           (liftM PigFieldName pigIdentifier)
 
 quotedString :: Parser String
 quotedString = do char '\''
@@ -156,7 +159,7 @@ tupleDef :: Parser [PigNode]
 tupleDef = liftM id $ sepBy field comma
 
 field :: Parser PigNode
-field = do fieldName <- identifier
+field = do fieldName <- pigIdentifier
            char ':'
            fieldType <- pigType
            return $ PigField (PigFieldName fieldName) (PigFieldType fieldType)
@@ -177,7 +180,7 @@ transform = flattenTransform <|> tupleFieldGlob <|> expressionTransform
 
 flattenTransform :: Parser PigNode
 flattenTransform = do reserved "FLATTEN"
-                      argument <- parens identifier
+                      argument <- parens pigIdentifier
                       reserved "AS"
                       schema <- parens tuple
                       return $ PigFlatten argument schema
@@ -185,14 +188,11 @@ flattenTransform = do reserved "FLATTEN"
 expressionTransform :: Parser PigNode
 expressionTransform = do expr <- expression
                          reserved "AS"
-                         fieldName <- identifier
+                         fieldName <- pigIdentifier
                          return $ PigExpressionTransform expr (PigFieldName fieldName)
 
 expression :: Parser PigNode
-expression = tupleFieldGlob <|> pigFunc <|> generalExpression
-
-fieldExpression :: Parser PigNode
-fieldExpression = name
+expression = tupleFieldGlob <|> pigFunc <|> name <|> generalExpression
 
 -- general expression:
 -- fieldExpression or literal or function or binary operation (+-*/%) or bincond (?:)
@@ -251,7 +251,7 @@ tuple :: Parser PigNode
 tuple = liftM PigTuple $ sepBy name comma
 
 name :: Parser PigNode
-name = liftM PigFieldName $ identifier
+name = liftM PigFieldName $ pigIdentifier
 
 -- top-level parse functions
 
