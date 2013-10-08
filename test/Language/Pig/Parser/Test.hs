@@ -29,14 +29,13 @@ parserSuite = testGroup "Parser"
                                                                  "Right (PigQuery (PigIdentifier \"report\") (PigForeachClause (PigIdentifier \"report\") (PigTransforms [PigFlatten \"group\" (PigTuple [PigFieldName \"date\",PigFieldName \"herd\"]),PigExpressionTransform (PigFunc \"COUNT\" (PigArguments [PigFieldName \"active_users\"])) (PigFieldName \"day_visits\")])))")
    , testCase "foreach stmt with qualified field names" (testStmt "report = FOREACH report GENERATE report::date AS date, report::herd AS herd, report::day_visits AS day_visits, visits::visits AS visits;"
                                                                   "")
+   , testCase "foreach stmt with quoted string" (testStmt "report = FOREACH report GENERATE '$date' AS date, *;"
+                                                                  "Right (PigQuery (PigIdentifier \"report\") (PigForeachClause (PigIdentifier \"report\") (PigTransforms [PigExpressionTransform (PigString \"$date\") (PigFieldName \"date\"),PigTupleFieldGlob])))")
 
    , testCase "join stmt" (testStmt "active_users = JOIN users BY user_id, active_users BY user_id;"
                                     "Right (PigQuery (PigIdentifier \"active_users\") (PigInnerJoinClause [PigJoin \"users\" \"user_id\",PigJoin \"active_users\" \"user_id\"]))")
                                                 ]
-{-
-report = FOREACH report GENERATE report::date AS date, report::herd AS herd, report::day_visits AS day_visits, visits::visits AS visits;
-report = FOREACH report GENERATE '$date' AS date, *;
--}
+
 
 testStmt :: String -> String -> Assertion
 testStmt str expected = expected @=? (show $ parseString str)

@@ -207,7 +207,7 @@ expressionTransform = do expr <- expression
                          return $ PigExpressionTransform expr (PigFieldName fieldName)
 
 expression :: Parser PigNode
-expression = tupleFieldGlob <|> pigFunc <|> name <|> generalExpression
+expression = tupleFieldGlob <|> pigFunc <|> name <|> (pigQuotedString PigString) <|> generalExpression
 
 -- general expression:
 -- fieldExpression or literal or function or binary operation (+-*/%) or bincond (?:)
