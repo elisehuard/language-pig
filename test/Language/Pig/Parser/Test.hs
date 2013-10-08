@@ -42,6 +42,8 @@ parserSuite = testGroup "Parser"
                                         "Right (PigDescribe (PigIdentifier \"visits\"))")
    , testCase "define stmt" (testStmt "define RESOLVE `python delta.py $date` SHIP('delta.py');"
                                       "Right (PigDefineUDF (PigIdentifier \"RESOLVE\") (PigExec \"python delta.py $date\") (PigShip (PigPath \"delta.py\")))")
+   , testCase "stream stmt" (testStmt "report = STREAM report THROUGH RESOLVE AS (day:chararray, herd:chararray, day_visits:int, visits:int);"
+                                      "Right (PigQuery (PigIdentifier \"report\") (PigStreamClause (PigIdentifier \"report\") (PigIdentifier \"RESOLVE\") (PigSchema [PigField (PigFieldName \"day\") (PigFieldType PigCharArray),PigField (PigFieldName \"herd\") (PigFieldType PigCharArray),PigField (PigFieldName \"day_visits\") (PigFieldType PigInt),PigField (PigFieldName \"visits\") (PigFieldType PigInt)])))")
                                                 ]
 
 

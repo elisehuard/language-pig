@@ -23,6 +23,7 @@ data PigNode = PigStmt PigNode
              | PigInnerJoinClause [PigNode]
              | PigGroupClause PigNode PigNode
              | PigDefineUDF PigNode PigNode PigNode
+             | PigStreamClause PigNode PigNode PigNode
              | PigShip PigNode
              | PigFilename String
              | PigExec String
@@ -85,6 +86,7 @@ pigLanguageDef = emptyDef {
                                    "GROUP",
                                    "DESCRIBE", "SHIP",
                                    "define",
+                                   "STREAM", "THROUGH",
                                    "int", "long", "float", "double", "chararray", "bytearray", "*"]
           , Token.reservedOpNames = ["=", "+", "-", "*", "/", "%", "?", ":"]
         }
@@ -137,6 +139,7 @@ opClause = loadClause
        <|> foreachClause
        <|> innerJoinClause
        <|> groupClause
+       <|> streamClause
 
 loadClause :: Parser PigNode
 loadClause =
@@ -170,6 +173,16 @@ groupClause =
      reserved "BY"
      columns <- tuple <|> name
      return $ PigGroupClause alias columns
+
+streamClause :: Parser PigNode
+streamClause =
+  do reserved "STREAM"
+     alias <- pigVar
+     reserved "THROUGH"
+     udf <- pigVar
+     reserved "AS"
+     schema <- pigTupleDef
+     return $ PigStreamClause alias udf schema
 
 joinTable :: Parser PigNode
 joinTable = do table <- pigIdentifier
