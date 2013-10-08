@@ -29,6 +29,9 @@ parserSuite = testGroup "Parser"
                                                                  "Right (PigQuery (PigIdentifier \"report\") (PigForeachClause (PigIdentifier \"report\") (PigTransforms [PigFlatten \"group\" (PigTuple [PigFieldName \"date\",PigFieldName \"herd\"]),PigExpressionTransform (PigFunc \"COUNT\" (PigArguments [PigFieldName \"active_users\"])) (PigFieldName \"day_visits\")])))")
    , testCase "foreach stmt with qualified field names" (testStmt "report = FOREACH report GENERATE report::date AS date, report::herd AS herd, report::day_visits AS day_visits, visits::visits AS visits;"
                                                                   "")
+
+   , testCase "join stmt" (testStmt "active_users = JOIN users BY user_id, active_users BY user_id;"
+                                    "Right (PigQuery (PigIdentifier \"active_users\") (PigInnerJoinClause [PigJoin \"users\" \"user_id\",PigJoin \"active_users\" \"user_id\"]))")
                                                 ]
 {-
 report = FOREACH report GENERATE report::date AS date, report::herd AS herd, report::day_visits AS day_visits, visits::visits AS visits;

@@ -19,6 +19,7 @@ data PigNode = PigStmt PigNode
              | PigOpClause PigNode
              | PigLoadClause PigNode PigNode PigNode
              | PigForeachClause PigNode PigNode
+             | PigInnerJoinClause [PigNode]
              | PigFilename String
              | PigFunc String PigNode
              | PigArguments [PigNode]
@@ -32,6 +33,7 @@ data PigNode = PigStmt PigNode
              | PigTuple [PigNode]
              | PigExpressionTransform PigNode PigNode -- foreach calculates expression
              | PigExpression PigNode
+             | PigJoin String String
              | PigBinary PigNode PigNode PigNode
              | PigBooleanBinary PigNode PigNode PigNode
              | PigBinCond PigNode PigNode PigNode
@@ -73,6 +75,7 @@ pigLanguageDef = emptyDef {
           , Token.identLetter    = alphaNum <|> specialChar -- todo allow double colon in identifier: custom parser
           , Token.reservedNames = ["LOAD", "USING", "AS", 
                                    "FOREACH", "GENERATE", "FLATTEN",
+                                   "JOIN", "BY",
                                    "int", "long", "float", "double", "chararray", "bytearray", "*"]
           , Token.reservedOpNames = ["=", "+", "-", "*", "/", "%", "?", ":"]
         }
@@ -106,7 +109,7 @@ statement =
            return $ PigQuery var expr
 
 opClause :: Parser PigNode
-opClause = loadClause <|> foreachClause
+opClause = loadClause <|> foreachClause <|> innerJoinClause
 
 loadClause :: Parser PigNode
 loadClause =
@@ -126,6 +129,18 @@ foreachClause =
      reserved "GENERATE"
      transforms <- sepBy transform comma
      return $ PigForeachClause alias (PigTransforms transforms)
+
+innerJoinClause :: Parser PigNode
+innerJoinClause =
+  do reserved "JOIN"
+     joins <- sepBy joinTable comma
+     return $ PigInnerJoinClause joins
+
+joinTable :: Parser PigNode
+joinTable = do table <- pigIdentifier
+               reserved "BY"
+               fieldName <- pigIdentifier
+               return $ PigJoin table fieldName
 
 pigVar :: Parser PigNode
 pigVar = liftM PigIdentifier $ pigIdentifier
