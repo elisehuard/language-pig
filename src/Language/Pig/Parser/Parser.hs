@@ -43,8 +43,10 @@ data PigNode = PigStmt PigNode
              | PigExpressionTransform PigNode PigNode -- foreach calculates expression
              | PigExpression PigNode
              | PigJoin String String
-             | PigBinary PigNode PigNode PigNode
-             | PigBooleanBinary PigNode PigNode PigNode
+             | PigUnary PigOperator PigNode
+             | PigBinary PigOperator PigNode PigNode
+             | PigBooleanUnary PigOperator PigNode
+             | PigBooleanBinary PigOperator PigNode PigNode
              | PigBinCond PigNode PigNode PigNode
              | PigString String
              | PigInt
@@ -53,24 +55,26 @@ data PigNode = PigStmt PigNode
              | PigDouble
              | PigCharArray
              | PigByteArray
-             | PigAdd
-             | PigSubtract
-             | PigMultiply
-             | PigDivide
-             | PigModulo
-             | PigNeg PigNode
              | PigNumber (Either Integer Double)
              | PigStringLiteral String
-             | PigAnd
-             | PigOr
-             | PigNot PigNode
-             | PigEqual
-             | PigNotEqual
-             | PigGreater
-             | PigLess
-             | PigGreaterEqual
-             | PigLessEqual
              deriving (Show, Eq) -- Read, Data, Typeable ?
+
+data PigOperator = PigNeg
+                 | PigAdd
+                 | PigSubtract
+                 | PigMultiply
+                 | PigDivide
+                 | PigModulo
+                 | PigAnd
+                 | PigOr
+                 | PigNot
+                 | PigEqual
+                 | PigNotEqual
+                 | PigGreater
+                 | PigLess
+                 | PigGreaterEqual
+                 | PigLessEqual
+                 deriving (Show, Eq) -- Read, Data, Typeable ?
 
 specialChar = oneOf "_" -- TODO only allow double colon
 
@@ -291,7 +295,7 @@ generalExpression = parens calculation
 calculation :: Parser PigNode
 calculation = try(conditional) <|> buildExpressionParser pigOperators pigTerm
 
-pigOperators = [[Prefix (reservedOp "-" >> return (PigNeg))]
+pigOperators = [[Prefix (reservedOp "-" >> return (PigUnary PigNeg))]
                ,[Infix (reservedOp "*" >> return (PigBinary PigMultiply)) AssocLeft]
                ,[Infix (reservedOp "/" >> return (PigBinary PigDivide)) AssocLeft]
                ,[Infix (reservedOp "%" >> return (PigBinary PigModulo)) AssocLeft]
@@ -314,7 +318,7 @@ booleanExpression = buildExpressionParser booleanOperators booleanTerm
 booleanTerm = parens booleanExpression
           <|> comparisonExpression
 
-booleanOperators = [ [Prefix (reservedOp "not" >> return (PigNot))]
+booleanOperators = [ [Prefix (reservedOp "not" >> return (PigBooleanUnary PigNot))]
                    , [Infix  (reservedOp "and" >> return (PigBooleanBinary PigAnd)) AssocLeft]
                    , [Infix  (reservedOp "or"  >> return (PigBooleanBinary PigOr)) AssocLeft]]
 
