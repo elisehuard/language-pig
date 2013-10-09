@@ -14,6 +14,7 @@ import qualified Text.ParserCombinators.Parsec.Token as Token
 --import Language.Pig.Parser.AST
 
 data PigNode = PigStmt PigNode
+             | PigSeq [PigNode]
              | PigQuery PigNode PigNode
              | PigDescribe PigNode
              | PigIdentifier String
@@ -74,7 +75,7 @@ data PigOperator = PigNeg
                  | PigLess
                  | PigGreaterEqual
                  | PigLessEqual
-                 deriving (Show, Eq) -- Read, Data, Typeable ?
+                 deriving (Show, Eq)
 
 specialChar = oneOf "_" -- TODO only allow double colon
 
@@ -117,7 +118,8 @@ pigParser :: Parser PigNode
 pigParser = whiteSpace >> statements -- leading whitespace
 
 statements :: Parser PigNode
-statements = liftM head $ endBy statement semi -- TODO handle multiple statements
+statements = do list <- endBy statement semi
+                return $ if length list == 1 then head list else PigSeq list
 
 statement :: Parser PigNode
 statement = query <|> describe <|> define <|> store
