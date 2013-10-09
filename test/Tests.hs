@@ -6,7 +6,8 @@ import Test.Framework.Providers.HUnit
 import Test.HUnit hiding (Test)
 
 import Language.Pig.Parser.Test
+import Language.Pig.Pretty.Test
 
 
 main :: IO ()
-main = defaultMain [parserSuite]
+main = defaultMain [parserSuite, prettyPrintSuite]
