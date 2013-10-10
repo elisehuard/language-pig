@@ -57,7 +57,6 @@ data PigNode = PigStmt PigNode
              | PigCharArray
              | PigByteArray
              | PigNumber (Either Integer Double)
-             | PigStringLiteral String
              deriving (Show, Eq) -- Read, Data, Typeable ?
 
 data PigOperator = PigNeg
@@ -304,7 +303,7 @@ pigOperators = [[Prefix (reservedOp "-" >> return (PigUnary PigNeg))]
                ,[Infix (reservedOp "+" >> return (PigBinary PigAdd)) AssocLeft]
                ,[Infix (reservedOp "-" >> return (PigBinary PigSubtract)) AssocLeft]]
 
-pigTerm = (liftM PigStringLiteral $ quotedString) <|> number <|> name <|> generalExpression
+pigTerm = (liftM PigString $ quotedString) <|> number <|> name <|> generalExpression
 
 number = liftM PigNumber $ naturalOrFloat -- for now - could be naturalOrFloat for inclusion
 
