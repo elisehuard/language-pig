@@ -28,7 +28,7 @@ parserSuite = testGroup "Parser"
    , testCase "foreach stmt with flatten and function" (testStmt "report = FOREACH report GENERATE FLATTEN(group) AS (date, herd), COUNT(active_users) AS day_visits;"
                                                                  "Right (PigQuery (PigIdentifier \"report\") (PigForeachClause (PigIdentifier \"report\") (PigTransforms [PigFlatten \"group\" (PigTuple [PigFieldName \"date\",PigFieldName \"herd\"]),PigExpressionTransform (PigFunc \"COUNT\" (PigArguments [PigFieldName \"active_users\"])) (PigFieldName \"day_visits\")])))")
    , testCase "foreach stmt with qualified field names" (testStmt "report = FOREACH report GENERATE report::date AS date, report::herd AS herd, report::day_visits AS day_visits, visits::visits AS visits;"
-                                                                  "")
+                                                                  "Right (PigQuery (PigIdentifier \"report\") (PigForeachClause (PigIdentifier \"report\") (PigTransforms [PigExpressionTransform (PigIdentifier \"report::date\") (PigFieldName \"date\"),PigExpressionTransform (PigIdentifier \"report::herd\") (PigFieldName \"herd\"),PigExpressionTransform (PigIdentifier \"report::day_visits\") (PigFieldName \"day_visits\"),PigExpressionTransform (PigIdentifier \"visits::visits\") (PigFieldName \"visits\")])))")
    , testCase "foreach stmt with quoted string" (testStmt "report = FOREACH report GENERATE '$date' AS date, *;"
                                                                   "Right (PigQuery (PigIdentifier \"report\") (PigForeachClause (PigIdentifier \"report\") (PigTransforms [PigExpressionTransform (PigString \"$date\") (PigFieldName \"date\"),PigTupleFieldGlob])))")
 

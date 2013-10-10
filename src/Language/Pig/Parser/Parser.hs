@@ -10,6 +10,7 @@ import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
+import Data.List (intercalate)
 
 --import Language.Pig.Parser.AST
 
@@ -85,7 +86,7 @@ pigLanguageDef = emptyDef {
           , Token.commentLine = "--"
           , Token.nestedComments = True
           , Token.identStart     = letter
-          , Token.identLetter    = alphaNum <|> specialChar -- todo allow double colon in identifier: custom parser
+          , Token.identLetter    = alphaNum <|> specialChar
           , Token.reservedNames = ["LOAD", "USING", "AS", -- todo case insensitivity of these keywords
                                    "FOREACH", "GENERATE", "FLATTEN",
                                    "JOIN", "BY",
@@ -109,9 +110,19 @@ semi = Token.semi lexer
 comma = Token.comma lexer
 whiteSpace = Token.whiteSpace lexer
 parens = Token.parens lexer
+lexeme = Token.lexeme lexer
 
 -- TODO: create parser to handle double colon.
-pigIdentifier = identifier
+pigIdentifier = try(detailedIdentifier) <|> identifier
+
+detailedIdentifier :: Parser String
+detailedIdentifier = lexeme $
+                     do parts <- sepBy1 identifierPart (string "::")
+                        return $ intercalate "::" parts
+
+identifierPart = do start <- letter
+                    part <- many1 (alphaNum <|> specialChar)
+                    return $ (start:part)
 
 pigParser :: Parser PigNode
 pigParser = whiteSpace >> statements -- leading whitespace
@@ -124,10 +135,10 @@ statement :: Parser PigNode
 statement = query <|> describe <|> define <|> store
 
 query :: Parser PigNode
-query = do var <- pigVar
+query = do var <- identifier
            reservedOp "="
            expr <- opClause
-           return $ PigQuery var expr
+           return $ PigQuery (PigIdentifier var) expr
 
 describe :: Parser PigNode
 describe = do reserved "DESCRIBE"
@@ -268,7 +279,7 @@ pigSimpleType :: String -> PigNode -> Parser PigNode
 pigSimpleType typeString constructor = reserved typeString >> return constructor
               
 transform :: Parser PigNode
-transform = flattenTransform <|> tupleFieldGlob <|> expressionTransform
+transform = try(aliasTransform) <|> flattenTransform <|> tupleFieldGlob <|> expressionTransform
 
 flattenTransform :: Parser PigNode
 flattenTransform = do reserved "FLATTEN"
@@ -280,11 +291,17 @@ flattenTransform = do reserved "FLATTEN"
 expressionTransform :: Parser PigNode
 expressionTransform = do expr <- expression
                          reserved "AS"
-                         fieldName <- pigIdentifier
+                         fieldName <- identifier
                          return $ PigExpressionTransform expr (PigFieldName fieldName)
 
+aliasTransform :: Parser PigNode
+aliasTransform = do name1 <- pigIdentifier
+                    reserved "AS"
+                    alias <- identifier
+                    return $ PigExpressionTransform (PigIdentifier name1) (PigFieldName alias)
+
 expression :: Parser PigNode
-expression = tupleFieldGlob <|> pigFunc <|> name <|> (pigQuotedString PigString) <|> generalExpression
+expression = tupleFieldGlob <|> pigFunc <|> (pigQuotedString PigString) <|> generalExpression
 
 -- general expression:
 -- fieldExpression or literal or function or binary operation (+-*/%) or bincond (?:)
@@ -303,7 +320,7 @@ pigOperators = [[Prefix (reservedOp "-" >> return (PigUnary PigNeg))]
                ,[Infix (reservedOp "+" >> return (PigBinary PigAdd)) AssocLeft]
                ,[Infix (reservedOp "-" >> return (PigBinary PigSubtract)) AssocLeft]]
 
-pigTerm = (liftM PigString $ quotedString) <|> number <|> name <|> generalExpression
+pigTerm = (liftM PigString $ quotedString) <|> number <|> generalExpression <|> name
 
 number = liftM PigNumber $ naturalOrFloat -- for now - could be naturalOrFloat for inclusion
 
