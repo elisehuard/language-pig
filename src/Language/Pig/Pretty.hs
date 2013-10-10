@@ -17,6 +17,12 @@ toDataTree (PigLoadClause a b c) = Node "load stmt" (map toDataTree [a, b, c])
 toDataTree (PigFunc a b) = Node ("function: " ++ a ++ "(" ++ prettyText b ++ ")") []
 toDataTree (PigSchema list) = Node "schema" (map toDataTree list)
 toDataTree (PigField (PigFieldName a) (PigFieldType b)) = Node ("field " ++ a ++ ": " ++ show b) []
+toDataTree (PigForeachClause a b) = Node "foreach stmt" (map toDataTree [a, b])
+toDataTree (PigTransforms list) = Node "transforms" (map toDataTree list)
+toDataTree (PigFlatten a b) = Node ("flatten " ++ a) (listToTree b)
+toDataTree (PigFieldName a) = Node ("field: " ++ a) []
+
+listToTree (PigTuple list) = map toDataTree list
 
 prettyText :: PigNode -> String
 prettyText (PigArguments b) = intercalate "," $ map prettyText b
