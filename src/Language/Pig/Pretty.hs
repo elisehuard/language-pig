@@ -1,26 +1,24 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 module Language.Pig.Pretty
-    ( pretty
-    , prettyText)
+    ( prettyPrint )
 where
 
 import Language.Pig.Parser.Parser
-import Text.PrettyPrint as TextPP
+import Text.ParserCombinators.Parsec
 
--- | All types which can be transformed into a 'Doc'.
-class Pretty a where
-   pretty :: a -> Doc
+import Data.List (intercalate)
+import Data.Tree hiding (Tree)
 
--- | Transform values into strings.
-prettyText :: Pretty a => a -> String
-prettyText = render . pretty
+toDataTree (PigString s) = Node ("string: " ++ s) []
+toDataTree (PigAssignment a b) = Node "assignment" (map toDataTree [a, b])
+toDataTree (PigIdentifier s) = Node ("identifier: " ++ s) []
+toDataTree (PigFilename s) = Node ("filename: \"" ++ s ++ "\"") []
+toDataTree (PigLoadClause a b c) = Node "load stmt" (map toDataTree [a, b, c])
+toDataTree (PigFunc a b) = Node ("function: " ++ a ++ "(" ++ prettyText b ++ ")") []
+toDataTree (PigSchema list) = Node "schema" (map toDataTree list)
+toDataTree (PigField (PigFieldName a) (PigFieldType b)) = Node ("field " ++ a ++ ": " ++ show b) []
 
-instance Pretty String where
-   pretty s = text s
+prettyText :: PigNode -> String
+prettyText (PigArguments b) = intercalate "," $ map prettyText b
 
-instance Pretty Integer where
-  pretty = integer
-
-instance Pretty PigNode where
-   pretty (PigString s) = text s
-
+prettyPrint ast = drawTree $ toDataTree ast

@@ -24,7 +24,7 @@ library
   -- Other-modules:        Language.Pig.Parser.Token
   build-depends:       base ==4.6.*, Cabal >= 1.16.0
                        , parsec >= 3.1.3
-                       , pretty >= 1.1.1
+                       , containers
 
 test-suite Tests
   hs-source-dirs: test
