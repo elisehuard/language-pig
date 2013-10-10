@@ -2,6 +2,7 @@ module Language.Pig.Parser.Parser (
   parseString
   , parseFile
   , PigNode(..)
+  , PigOperator(..)
 ) where
 
 import System.IO
@@ -14,9 +15,8 @@ import Data.List (intercalate)
 
 --import Language.Pig.Parser.AST
 
-data PigNode = PigStmt PigNode
-             | PigSeq [PigNode]
-             | PigQuery PigNode PigNode
+data PigNode = PigSeq [PigNode]
+             | PigAssignment PigNode PigNode
              | PigDescribe PigNode
              | PigIdentifier String
              | PigOpClause PigNode
@@ -139,7 +139,7 @@ query :: Parser PigNode
 query = do var <- identifier
            reservedOp "="
            expr <- opClause
-           return $ PigQuery (PigIdentifier var) expr
+           return $ PigAssignment (PigIdentifier var) expr
 
 describe :: Parser PigNode
 describe = do reserved "DESCRIBE"
