@@ -92,11 +92,12 @@ pigLanguageDef = emptyDef {
                                    "JOIN", "BY",
                                    "GROUP",
                                    "DESCRIBE", "SHIP",
-                                   "define",
+                                   "DEFINE",
                                    "STREAM", "THROUGH",
                                    "STORE", "INTO", "USING",
                                    "int", "long", "float", "double", "chararray", "bytearray", "*"]
           , Token.reservedOpNames = ["=", "+", "-", "*", "/", "%", "?", ":"]
+          , Token.caseSensitive = False
         }
 
 lexer = Token.makeTokenParser pigLanguageDef

@@ -55,6 +55,8 @@ parserSuite = testGroup "Parser"
 
    , testCase "several statements" (testStmt "active_users = LOAD 'warehouse/active_users/daily/point/{$visit_dates}*' USING ColumnStorage(' ') AS (date:chararray, user_id:long);\nactive_users = JOIN users BY user_id, active_users BY user_id;" 
                                              "Right (PigSeq [PigQuery (PigIdentifier \"active_users\") (PigLoadClause (PigFilename \"warehouse/active_users/daily/point/{$visit_dates}*\") (PigFunc \"ColumnStorage\" (PigArguments [PigString \" \"])) (PigSchema [PigField (PigFieldName \"date\") (PigFieldType PigCharArray),PigField (PigFieldName \"user_id\") (PigFieldType PigLong)])),PigQuery (PigIdentifier \"active_users\") (PigInnerJoinClause [PigJoin \"users\" \"user_id\",PigJoin \"active_users\" \"user_id\"])])") 
+   , testCase "case insensitivity of keywords" (testStmt "store report into '$output' using ColumnStorage(',');"
+                                     "Right (PigStore (PigIdentifier \"report\") (PigDirectory \"$output\") (PigFunc \"ColumnStorage\" (PigArguments [PigString \",\"])))")
    ]
 
 testStmt :: String -> String -> Assertion
