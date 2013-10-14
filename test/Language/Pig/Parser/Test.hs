@@ -8,6 +8,7 @@ import Test.HUnit hiding (Test)
 import Control.Monad (liftM)
 import Language.Pig.Parser
 import Language.Pig.Parser.Parser
+import Language.Pig.Parser.AST
 
 parserSuite :: Test
 parserSuite = testGroup "Parser"

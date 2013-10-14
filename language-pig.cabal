@@ -19,6 +19,7 @@ library
   -- exposed-modules:     
   Exposed-modules:      Language.Pig.Parser
                         Language.Pig.Parser.Parser
+                        Language.Pig.Parser.AST
                         Language.Pig.Pretty
   -- other-modules:       
   -- Other-modules:        Language.Pig.Parser.Token
