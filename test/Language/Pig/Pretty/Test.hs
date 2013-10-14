@@ -36,7 +36,7 @@ assignment
       `- field user_id: PigLong
 -}
 
-  , testCase "foreach stmt tree" (testPrint (PigAssignment (PigIdentifier "users") (PigForeachClause (PigIdentifier "users") (PigTransforms [PigFlatten "group" (PigTuple [PigFieldName "date",PigFieldName "herd"])]))) "")
+  , testCase "foreach stmt tree" (testPrint (PigAssignment (PigIdentifier "users") (PigForeachClause (PigIdentifier "users") (PigTransforms [PigFlatten "group" (PigTuple [PigFieldName "date",PigFieldName "herd"])]))) "assignment\n|\n+- identifier: users\n|\n`- foreach stmt\n   |\n   +- identifier: users\n   |\n   `- transforms\n      |\n      `- flatten group\n         |\n         +- field: date\n         |\n         `- field: herd\n")
 {-
 visualized:
 
