@@ -82,16 +82,16 @@ data Expression = Unary Operator Expression
                 | AliasTerm Alias
                 DERIVE
 
-data Scalar = PigNumber (Either Integer Double)
-            | PigString String
+data Scalar = Number (Either Integer Double)
+            | String String
             DERIVE
 
-data SimpleType = PigInt
-                | PigLong
-                | PigFloat
-                | PigDouble
-                | PigCharArray
-                | PigByteArray
+data SimpleType = Int
+                | Long
+                | Float
+                | Double
+                | CharArray
+                | ByteArray
                 DERIVE
 
 data Operator = Neg

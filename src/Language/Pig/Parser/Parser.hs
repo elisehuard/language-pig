@@ -183,7 +183,7 @@ arguments = do args <- sepBy argument comma
                return $ args
 
 argument :: Parser Argument
-argument = (liftM (StringArgument . PigString) quotedString) <|> 
+argument = (liftM (StringArgument . String) quotedString) <|> 
            liftM AliasArgument pigVar
 
 quotedString :: Parser String
@@ -213,12 +213,12 @@ field = do fieldName <- pigVar
            return $ Field fieldName fieldType
 
 pigType :: Parser SimpleType
-pigType = pigSimpleType "int" PigInt <|>
-          pigSimpleType "long" PigLong <|>
-          pigSimpleType "float" PigFloat <|>
-          pigSimpleType "double" PigDouble <|>
-          pigSimpleType "chararray" PigCharArray <|>
-          pigSimpleType "bytearray" PigByteArray
+pigType = pigSimpleType "int" Int <|>
+          pigSimpleType "long" Long <|>
+          pigSimpleType "float" Float <|>
+          pigSimpleType "double" Double <|>
+          pigSimpleType "chararray" CharArray <|>
+          pigSimpleType "bytearray" ByteArray
 
 pigSimpleType :: String -> SimpleType -> Parser SimpleType
 pigSimpleType typeString constructor = reserved typeString >> return constructor
@@ -257,7 +257,7 @@ aliasTransform = do name1 <- pigIdentifier
                     return $ AliasTransform (Identifier name1) (Identifier alias)
 
 envTransform :: Parser Transform
-envTransform = do name1 <- pigQuotedString PigString
+envTransform = do name1 <- pigQuotedString String
                   reserved "AS"
                   alias <- identifier
                   return $ EnvTransform name1 (Identifier alias)
@@ -280,12 +280,12 @@ pigOperators = [[Prefix (reservedOp "-" >> return (Unary Neg))]
                ,[Infix (reservedOp "-" >> return (Binary Subtract)) AssocLeft]]
 
 pigTerm :: Parser Expression
-pigTerm = (liftM (ScalarTerm . PigString) $ quotedString)
+pigTerm = (liftM (ScalarTerm . String) $ quotedString)
       <|> (liftM ScalarTerm $ number)
       <|> generalExpression
       <|> (liftM AliasTerm $ name)
 
-number = liftM PigNumber $ naturalOrFloat -- for now - could be naturalOrFloat for inclusion
+number = liftM Number $ naturalOrFloat -- for now - could be naturalOrFloat for inclusion
 
 conditional :: Parser Expression
 conditional = do cond <- booleanExpression
