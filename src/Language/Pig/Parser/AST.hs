@@ -1,71 +1,112 @@
-module Language.Pig.Parser.AST (
-         PigNode(..)
-       , PigOperator(..)
-       ) where
+{-# LANGUAGE CPP, DeriveDataTypeable #-}
+module Language.Pig.Parser.AST where
+
+#define DERIVE deriving (Eq,Ord,Show,Typeable,Data)
+
+import Data.Data
+import Data.Typeable
 
 -- source:
 -- http://wiki.apache.org/pig/PigLexer
 -- http://wiki.apache.org/pig/PigParser
 
-data PigNode = PigSeq [PigNode]
-             | PigAssignment PigNode PigNode
-             | PigDescribe PigNode
-             | PigIdentifier String
-             | PigOpClause PigNode
-             | PigLoadClause PigNode PigNode PigNode
-             | PigForeachClause PigNode PigNode
-             | PigInnerJoinClause [PigNode]
-             | PigGroupClause PigNode PigNode
-             | PigDefineUDF PigNode PigNode PigNode
-             | PigStreamClause PigNode PigNode PigNode
-             | PigStore PigNode PigNode PigNode
-             | PigShip PigNode
-             | PigFilename String
-             | PigDirectory String
-             | PigExec String
-             | PigPath String
-             | PigFunc String PigNode
-             | PigArguments [PigNode]
-             | PigSchema [PigNode]
-             | PigField PigNode PigNode
-             | PigFieldName String
-             | PigFieldType PigNode
-             | PigTransforms [PigNode]
-             | PigFlatten String PigNode -- foreach flatten transform
-             | PigTupleFieldGlob
-             | PigTuple [PigNode]
-             | PigExpressionTransform PigNode PigNode -- foreach calculates expression
-             | PigExpression PigNode
-             | PigJoin String String
-             | PigUnary PigOperator PigNode
-             | PigBinary PigOperator PigNode PigNode
-             | PigBooleanUnary PigOperator PigNode
-             | PigBooleanBinary PigOperator PigNode PigNode
-             | PigBinCond PigNode PigNode PigNode
-             | PigString String
-             | PigInt
-             | PigLong
-             | PigFloat
-             | PigDouble
-             | PigCharArray
-             | PigByteArray
-             | PigNumber (Either Integer Double)
-             deriving (Show, Eq) -- Read, Data, Typeable ?
+data Root = Seq [Statement]
+            DERIVE
 
-data PigOperator = PigNeg
-                 | PigAdd
-                 | PigSubtract
-                 | PigMultiply
-                 | PigDivide
-                 | PigModulo
-                 | PigAnd
-                 | PigOr
-                 | PigNot
-                 | PigEqual
-                 | PigNotEqual
-                 | PigGreater
-                 | PigLess
-                 | PigGreaterEqual
-                 | PigLessEqual
-                 deriving (Show, Eq)
+data Statement = Assignment Alias OpClause
+               | Describe Alias
+               | DefineUDF Alias Command DefineSpec
+               | Store Alias Path Function
+               DERIVE
 
+data OpClause = LoadClause Path Function TupleDef
+              | ForeachClause Alias GenBlock
+              | GroupClause Alias GroupBy
+              | InnerJoinClause [Join]
+              | StreamClause Alias Alias TupleDef
+              DERIVE
+
+data GenBlock = GenBlock [Transform]
+                DERIVE
+
+data GroupBy = SingleColumn Alias
+             | MultipleColumn Tuple
+             DERIVE
+
+data Transform = Flatten String Tuple -- foreach flatten transform
+               | TupleFieldGlob
+               | AliasTransform Alias Alias
+               | ExpressionTransform Expression Alias
+               | FunctionTransform Function Alias
+               | EnvTransform Scalar Alias
+               DERIVE
+
+data Join = Join String String
+            DERIVE
+
+data DefineSpec = Ship Path
+                  DERIVE
+
+data Alias = Identifier String
+             DERIVE
+
+data Path = Filename String
+          | Directory String
+          DERIVE
+
+data Command = Exec String
+               DERIVE
+
+data Function = Function String [Argument]
+                DERIVE
+
+data Argument = StringArgument Scalar
+              | AliasArgument Alias
+              DERIVE
+
+data TupleDef = TupleDef [Field]
+                DERIVE
+
+data Tuple = Tuple [Alias]
+             DERIVE
+
+data Field = Field Alias SimpleType
+             DERIVE
+
+data Expression = Unary Operator Expression
+                | Binary Operator Expression Expression
+                | BooleanUnary Operator Expression
+                | BooleanBinary Operator Expression Expression
+                | BinCond Expression Expression Expression
+                | ScalarTerm Scalar
+                | AliasTerm Alias
+                DERIVE
+
+data Scalar = PigNumber (Either Integer Double)
+            | PigString String
+            DERIVE
+
+data SimpleType = PigInt
+                | PigLong
+                | PigFloat
+                | PigDouble
+                | PigCharArray
+                | PigByteArray
+                DERIVE
+
+data Operator = Neg
+              | Add
+              | Subtract
+              | Multiply
+              | Divide
+              | Modulo
+              | And
+              | Or
+              | Not
+              | Equal
+              | NotEqual
+              | Greater
+              | Less
+              | GreaterEqual
+              | LessEqual
+              DERIVE

@@ -1,8 +1,7 @@
 module Language.Pig.Parser.Parser (
   parseString
   , parseFile
-  , PigNode(..)
-  , PigOperator(..)
+  , module Language.Pig.Parser.AST
 ) where
 
 import System.IO
@@ -15,7 +14,8 @@ import Data.List (intercalate)
 
 import Language.Pig.Parser.AST
 
---import Language.Pig.Parser.AST
+
+-- Lexer
 
 specialChar = oneOf "_" -- TODO only allow double colon
 
@@ -65,85 +65,88 @@ identifierPart = do start <- letter
                     part <- many1 (alphaNum <|> specialChar)
                     return $ (start:part)
 
-pigParser :: Parser PigNode
-pigParser = whiteSpace >> statements -- leading whitespace
 
-statements :: Parser PigNode
+-- Parser: top-down
+
+pigParser :: Parser Root
+pigParser = whiteSpace >> statements
+
+statements :: Parser Root
 statements = do list <- endBy statement semi
-                return $ if length list == 1 then head list else PigSeq list
+                return $ Seq list
 
-statement :: Parser PigNode
+statement :: Parser Statement
 statement = query <|> describe <|> define <|> store
 
-query :: Parser PigNode
+query :: Parser Statement
 query = do var <- identifier
            reservedOp "="
            expr <- opClause
-           return $ PigAssignment (PigIdentifier var) expr
+           return $ Assignment (Identifier var) expr
 
-describe :: Parser PigNode
+describe :: Parser Statement
 describe = do reserved "DESCRIBE"
               variable <- pigVar
-              return $ PigDescribe variable
+              return $ Describe variable
 
-define :: Parser PigNode
+define :: Parser Statement
 define = do reserved "define"
             alias <- pigVar
             command <- executable
             ship <- shipClause -- could be input, output, ship, cache, stderr in full pig grammar
-            return $ PigDefineUDF alias command ship 
+            return $ DefineUDF alias command ship 
 
-store :: Parser PigNode
+store :: Parser Statement
 store = do reserved "STORE"
            alias <- pigVar
            reserved "INTO"
-           output <- pigQuotedString PigDirectory
+           output <- pigQuotedString Directory
            reserved "USING"
            func <- pigFunc
-           return $ PigStore alias output func
+           return $ Store alias output func
 
 
-opClause :: Parser PigNode
+opClause :: Parser OpClause
 opClause = loadClause
        <|> foreachClause
        <|> innerJoinClause
        <|> groupClause
        <|> streamClause
 
-loadClause :: Parser PigNode
+loadClause :: Parser OpClause
 loadClause =
   do reserved "LOAD"
-     file <-  pigQuotedString PigFilename
+     file <-  pigQuotedString Filename
      reserved "USING"
      source <- pigFunc
      reserved "AS"
      schema <- pigTupleDef
-     return $ PigLoadClause file source schema
+     return $ LoadClause file source schema
 
 -- foreach: only the block (outer bag) version
-foreachClause :: Parser PigNode
+foreachClause :: Parser OpClause
 foreachClause =
   do reserved "FOREACH"
      alias <- pigVar
      reserved "GENERATE"
      transforms <- sepBy transform comma
-     return $ PigForeachClause alias (PigTransforms transforms)
+     return $ ForeachClause alias (GenBlock transforms)
 
-innerJoinClause :: Parser PigNode
+innerJoinClause :: Parser OpClause
 innerJoinClause =
   do reserved "JOIN"
      joins <- sepBy joinTable comma
-     return $ PigInnerJoinClause joins
+     return $ InnerJoinClause joins
 
-groupClause :: Parser PigNode
+groupClause :: Parser OpClause
 groupClause =
   do reserved "GROUP"
      alias <- pigVar
      reserved "BY"
-     columns <- tuple <|> name
-     return $ PigGroupClause alias columns
+     columns <- liftM MultipleColumn tuple <|> liftM SingleColumn name
+     return $ GroupClause alias columns
 
-streamClause :: Parser PigNode
+streamClause :: Parser OpClause
 streamClause =
   do reserved "STREAM"
      alias <- pigVar
@@ -151,36 +154,37 @@ streamClause =
      udf <- pigVar
      reserved "AS"
      schema <- pigTupleDef
-     return $ PigStreamClause alias udf schema
+     return $ StreamClause alias udf schema
 
-joinTable :: Parser PigNode
+joinTable :: Parser Join
 joinTable = do table <- pigIdentifier
                reserved "BY"
                fieldName <- pigIdentifier
-               return $ PigJoin table fieldName
+               return $ Join table fieldName
 
-shipClause :: Parser PigNode
+shipClause :: Parser DefineSpec
 shipClause = do reserved "SHIP"
                 path <- parens quotedString
-                return $ PigShip (PigPath path)
+                return $ Ship (Filename path)
 
-pigVar :: Parser PigNode
-pigVar = liftM PigIdentifier $ pigIdentifier
+pigVar :: Parser Alias
+pigVar = liftM Identifier $ pigIdentifier
 
-pigQuotedString :: (String -> PigNode) -> Parser PigNode
+pigQuotedString :: (String -> a) -> Parser a
 pigQuotedString constructor = liftM constructor $ quotedString
 
-pigFunc :: Parser PigNode
+pigFunc :: Parser Function
 pigFunc = do value <- identifier
              arguments <- parens arguments
-             return $ PigFunc value arguments
+             return $ Function value arguments
 
-arguments :: Parser PigNode
-arguments = liftM PigArguments $ sepBy argument comma
+arguments :: Parser [Argument]
+arguments = do args <- sepBy argument comma
+               return $ args
 
-argument :: Parser PigNode
-argument = (liftM PigString quotedString) <|> 
-           (liftM PigFieldName pigIdentifier)
+argument :: Parser Argument
+argument = (liftM (StringArgument . PigString) quotedString) <|> 
+           liftM AliasArgument pigVar
 
 quotedString :: Parser String
 quotedString = do char '\''
@@ -189,26 +193,26 @@ quotedString = do char '\''
                   whiteSpace
                   return $ value
 
-executable :: Parser PigNode
+executable :: Parser Command
 executable = do char '`'
                 value <- many $ noneOf "`" -- doesn't take into account escaped quotes
                 char '`'
                 whiteSpace
-                return $ PigExec value
+                return $ Exec value
 
-pigTupleDef :: Parser PigNode
-pigTupleDef = liftM PigSchema $ parens tupleDef
+pigTupleDef :: Parser TupleDef
+pigTupleDef = liftM TupleDef $ parens tupleDef
 
-tupleDef :: Parser [PigNode]
+tupleDef :: Parser [Field]
 tupleDef = liftM id $ sepBy field comma
 
-field :: Parser PigNode
-field = do fieldName <- pigIdentifier
+field :: Parser Field
+field = do fieldName <- pigVar
            char ':'
            fieldType <- pigType
-           return $ PigField (PigFieldName fieldName) (PigFieldType fieldType)
+           return $ Field fieldName fieldType
 
-pigType :: Parser PigNode
+pigType :: Parser SimpleType
 pigType = pigSimpleType "int" PigInt <|>
           pigSimpleType "long" PigLong <|>
           pigSimpleType "float" PigFloat <|>
@@ -216,100 +220,120 @@ pigType = pigSimpleType "int" PigInt <|>
           pigSimpleType "chararray" PigCharArray <|>
           pigSimpleType "bytearray" PigByteArray
 
-pigSimpleType :: String -> PigNode -> Parser PigNode
+pigSimpleType :: String -> SimpleType -> Parser SimpleType
 pigSimpleType typeString constructor = reserved typeString >> return constructor
               
-transform :: Parser PigNode
-transform = try(aliasTransform) <|> flattenTransform <|> tupleFieldGlob <|> expressionTransform
+transform :: Parser Transform
+transform = try(aliasTransform)
+         <|> flattenTransform
+         <|> tupleFieldGlob
+         <|> expressionTransform
+         <|> functionTransform
+         <|> envTransform
 
-flattenTransform :: Parser PigNode
+flattenTransform :: Parser Transform
 flattenTransform = do reserved "FLATTEN"
                       argument <- parens pigIdentifier
                       reserved "AS"
                       schema <- tuple
-                      return $ PigFlatten argument schema
+                      return $ Flatten argument schema
 
-expressionTransform :: Parser PigNode
-expressionTransform = do expr <- expression
+expressionTransform :: Parser Transform
+expressionTransform = do expr <- generalExpression
                          reserved "AS"
                          fieldName <- identifier
-                         return $ PigExpressionTransform expr (PigFieldName fieldName)
+                         return $ ExpressionTransform expr (Identifier fieldName)
 
-aliasTransform :: Parser PigNode
+functionTransform :: Parser Transform
+functionTransform = do function <- pigFunc
+                       reserved "AS"
+                       fieldName <- identifier
+                       return $ FunctionTransform function (Identifier fieldName)
+
+aliasTransform :: Parser Transform
 aliasTransform = do name1 <- pigIdentifier
                     reserved "AS"
                     alias <- identifier
-                    return $ PigExpressionTransform (PigIdentifier name1) (PigFieldName alias)
+                    return $ AliasTransform (Identifier name1) (Identifier alias)
 
-expression :: Parser PigNode
-expression = tupleFieldGlob <|> pigFunc <|> (pigQuotedString PigString) <|> generalExpression
+envTransform :: Parser Transform
+envTransform = do name1 <- pigQuotedString PigString
+                  reserved "AS"
+                  alias <- identifier
+                  return $ EnvTransform name1 (Identifier alias)
 
 -- general expression:
 -- fieldExpression or literal or function or binary operation (+-*/%) or bincond (?:)
 -- bincond: boolean expression (==, !=, >, <, >=, <=) (and, or, not)
-generalExpression :: Parser PigNode
+generalExpression :: Parser Expression
 generalExpression = parens calculation
 
 -- conditional is ternary operator, so lookahead to try and parse it first.
-calculation :: Parser PigNode
+calculation :: Parser Expression
 calculation = try(conditional) <|> buildExpressionParser pigOperators pigTerm
 
-pigOperators = [[Prefix (reservedOp "-" >> return (PigUnary PigNeg))]
-               ,[Infix (reservedOp "*" >> return (PigBinary PigMultiply)) AssocLeft]
-               ,[Infix (reservedOp "/" >> return (PigBinary PigDivide)) AssocLeft]
-               ,[Infix (reservedOp "%" >> return (PigBinary PigModulo)) AssocLeft]
-               ,[Infix (reservedOp "+" >> return (PigBinary PigAdd)) AssocLeft]
-               ,[Infix (reservedOp "-" >> return (PigBinary PigSubtract)) AssocLeft]]
+pigOperators = [[Prefix (reservedOp "-" >> return (Unary Neg))]
+               ,[Infix (reservedOp "*" >> return (Binary Multiply)) AssocLeft]
+               ,[Infix (reservedOp "/" >> return (Binary Divide)) AssocLeft]
+               ,[Infix (reservedOp "%" >> return (Binary Modulo)) AssocLeft]
+               ,[Infix (reservedOp "+" >> return (Binary Add)) AssocLeft]
+               ,[Infix (reservedOp "-" >> return (Binary Subtract)) AssocLeft]]
 
-pigTerm = (liftM PigString $ quotedString) <|> number <|> generalExpression <|> name
+pigTerm :: Parser Expression
+pigTerm = (liftM (ScalarTerm . PigString) $ quotedString)
+      <|> (liftM ScalarTerm $ number)
+      <|> generalExpression
+      <|> (liftM AliasTerm $ name)
 
 number = liftM PigNumber $ naturalOrFloat -- for now - could be naturalOrFloat for inclusion
 
+conditional :: Parser Expression
 conditional = do cond <- booleanExpression
                  reserved "?"
                  ifTrue <- calculation
                  reserved ":"
                  ifFalse <- calculation
-                 return $ PigBinCond cond ifTrue ifFalse
+                 return $ BinCond cond ifTrue ifFalse
 
 booleanExpression = buildExpressionParser booleanOperators booleanTerm
 
 booleanTerm = parens booleanExpression
           <|> comparisonExpression
 
-booleanOperators = [ [Prefix (reservedOp "not" >> return (PigBooleanUnary PigNot))]
-                   , [Infix  (reservedOp "and" >> return (PigBooleanBinary PigAnd)) AssocLeft]
-                   , [Infix  (reservedOp "or"  >> return (PigBooleanBinary PigOr)) AssocLeft]]
+booleanOperators = [ [Prefix (reservedOp "not" >> return (BooleanUnary Not))]
+                   , [Infix  (reservedOp "and" >> return (BooleanBinary And)) AssocLeft]
+                   , [Infix  (reservedOp "or"  >> return (BooleanBinary Or)) AssocLeft]]
 
+comparisonExpression :: Parser Expression
 comparisonExpression = do term1 <- pigTerm
                           operator <- relation
                           term2 <- pigTerm
-                          return $ PigBinary operator term1 term2
+                          return $ Binary operator term1 term2
 
 -- bincond: boolean expression (==, !=, >, <, >=, <=) (and, or, not)
-relation = (reservedOp ">" >> return PigGreater) <|>
-           (reservedOp "<" >> return PigLess) <|>
-           (reservedOp "<=" >> return PigLessEqual) <|>
-           (reservedOp ">=" >> return PigGreaterEqual) <|>
-           (reservedOp "==" >> return PigEqual) <|>
-           (reservedOp "!=" >> return PigNotEqual)
+relation = (reservedOp ">" >> return Greater) <|>
+           (reservedOp "<" >> return Less) <|>
+           (reservedOp "<=" >> return LessEqual) <|>
+           (reservedOp ">=" >> return GreaterEqual) <|>
+           (reservedOp "==" >> return Equal) <|>
+           (reservedOp "!=" >> return NotEqual)
 
-tupleFieldGlob :: Parser PigNode
-tupleFieldGlob = reserved "*" >> return PigTupleFieldGlob
+tupleFieldGlob :: Parser Transform
+tupleFieldGlob = reserved "*" >> return TupleFieldGlob
 
-tuple :: Parser PigNode
-tuple = liftM PigTuple $ parens (sepBy name comma)
+tuple :: Parser Tuple
+tuple = liftM Tuple $ parens (sepBy name comma)
 
-name :: Parser PigNode
-name = liftM PigFieldName $ pigIdentifier
+name :: Parser Alias
+name = liftM Identifier $ pigIdentifier
 
 -- top-level parse functions
 
-parseString :: String -> Either ParseError PigNode
-parseString input = parse pigParser "pigParser error" input
+parsePig :: String -> Either ParseError Root
+parsePig input = parse pigParser "pigParser error" input
 
-readPig :: [Char] -> PigNode
-readPig input = case parseString input of
+parseString :: [Char] -> Root
+parseString input = case parsePig input of
     Left msg -> error (show msg)
     Right p -> p
 
@@ -317,4 +341,4 @@ parseFile :: FilePath -> IO String
 parseFile filename =
   do
      x <- readFile (filename)
-     return $ show $ readPig x
+     return $ show $ parseString x

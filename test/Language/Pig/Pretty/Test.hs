@@ -9,6 +9,7 @@ import Language.Pig.Parser
 import Language.Pig.Parser.Parser
 import Language.Pig.Pretty
 
+{-
 prettyPrintSuite :: Test
 prettyPrintSuite = testGroup "pretty print"
   [
@@ -60,3 +61,4 @@ assignment
 
 testPrint :: PigNode -> String -> Assertion
 testPrint tree expected = expected @=? prettyPrint tree
+-}

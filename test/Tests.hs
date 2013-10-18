@@ -10,4 +10,4 @@ import Language.Pig.Pretty.Test
 
 
 main :: IO ()
-main = defaultMain [parserSuite, prettyPrintSuite]
+main = defaultMain [parserSuite]
