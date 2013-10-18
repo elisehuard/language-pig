@@ -9,56 +9,32 @@ import Language.Pig.Parser
 import Language.Pig.Parser.Parser
 import Language.Pig.Pretty
 
-{-
 prettyPrintSuite :: Test
 prettyPrintSuite = testGroup "pretty print"
   [
-    testCase "string node" (testPrint (PigString "test") "string: test\n")
-
-  , testCase "load stmt tree" (testPrint (PigAssignment (PigIdentifier "users") (PigLoadClause (PigFilename "sorted_log/user_registration/$date/*") (PigFunc "LogStorage" (PigArguments [])) (PigSchema [PigField (PigFieldName "date") (PigFieldType PigCharArray),PigField (PigFieldName "time") (PigFieldType PigCharArray),PigField (PigFieldName "user_id") (PigFieldType PigLong)]))) "assignment\n|\n+- identifier: users\n|\n`- load stmt\n   |\n   +- filename: \"sorted_log/user_registration/$date/*\"\n   |\n   +- function: LogStorage()\n   |\n   `- schema\n      |\n      +- field date: PigCharArray\n      |\n      +- field time: PigCharArray\n      |\n      `- field user_id: PigLong\n")
-{- visualized:
-
-assignment
-|
-+- identifier: users
-|
-`- load stmt
-   |
-   +- filename: "sorted_log/user_registration/$date/*"
-   |
-   +- function: LogStorage()
-   |
-   `- schema
-      |
-      +- field date: PigCharArray
-      |
-      +- field time: PigCharArray
-      |
-      `- field user_id: PigLong
--}
-
-  , testCase "foreach stmt tree" (testPrint (PigAssignment (PigIdentifier "users") (PigForeachClause (PigIdentifier "users") (PigTransforms [PigFlatten "group" (PigTuple [PigFieldName "date",PigFieldName "herd"])]))) "assignment\n|\n+- identifier: users\n|\n`- foreach stmt\n   |\n   +- identifier: users\n   |\n   `- transforms\n      |\n      `- flatten group\n         |\n         `- tuple\n            |\n            +- field: date\n            |\n            `- field: herd\n")
+    testCase "empty tree" (testPrint (Seq []) "empty ast\n")
+  , testCase "load statement" (testPrint (Seq [Assignment (Identifier "active_users") (LoadClause (Filename "warehouse/active_users/daily/point/{$visit_dates}*") (Function "ColumnStorage" [StringArgument (String " ")]) (TupleDef [Field (Identifier "date") CharArray,Field (Identifier "user_id") Long]))])
+                                         "                                                                           sequence of statements                                                                           \n                                                                                     |                                                                                      \n                                                                                 assignment                                                                                 \n                                                                                     |                                                                                      \n            --------------------------------------------------------------------------------------                                                                          \n           /                                                                                      \\                                                                         \nidentifier: active_users                                                                     LOAD clause                                                                    \n                                                                                                  |                                                                         \n                                                         -------------------------------------------------------------------------------------                              \n                                                        /                                           |                                         \\                             \n                          filename: \"warehouse/active_users/daily/point/{$visit_dates}*\"  function ColumnStorage                          tuple def                         \n                                                                                                    |                                         |                             \n                                                                                           string argument: \" \"                  -----------------------------              \n                                                                                                                                /                             \\             \n                                                                                                                  field: date of type CharArray  field: user_id of type Long\n")
 {-
-visualized:
 
-assignment
-|
-+- identifier: users
-|
-`- foreach stmt
-   |
-   +- identifier: users
-   |
-   `- transforms
-      |
-      `- flatten group
-         |
-         +- field: date
-         |
-         `- field: herd
+                                                                           sequence of statements
+                                                                                     |
+                                                                                 assignment
+                                                                                     |
+            --------------------------------------------------------------------------------------
+           /                                                                                      \
+identifier: active_users                                                                     LOAD clause
+                                                                                                  |
+                                                         -------------------------------------------------------------------------------------
+                                                        /                                           |                                         \
+                          filename: "warehouse/active_users/daily/point/{$visit_dates}*"  function ColumnStorage                          tuple def
+                                                                                                    |                                         |
+                                                                                           string argument: " "                  -----------------------------
+                                                                                                                                /                             \
+                                                                                                                  field: date of type CharArray  field: user_id of type Long
+
 -}
   ]
 
-testPrint :: PigNode -> String -> Assertion
+testPrint :: Root -> String -> Assertion
 testPrint tree expected = expected @=? prettyPrint tree
--}
