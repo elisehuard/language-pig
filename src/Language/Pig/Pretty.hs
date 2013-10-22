@@ -47,7 +47,7 @@ instance Treeable Transform where
   toTree (TupleFieldGlob) = Node "*" []
   toTree (AliasTransform a b) = Node "alias" [toTree a, toTree b]
   toTree (ExpressionTransform a b) = Node "calculate" [toTree a, toTree b]
-  toTree (FunctionTransform a b) = Node "function" [toTree a, toTree b]
+  toTree (FunctionTransform a b) = Node "function expression" [toTree a, toTree b]
   toTree (EnvTransform a b) = Node "name variable" [toTree a, toTree b]
 
 instance Treeable Join where
@@ -89,8 +89,9 @@ instance Treeable Expression where
   toTree (BooleanBinary o e1 e2) = Node "boolean binary expression" [toTree o, toTree e1, toTree e2]
   toTree (BinCond e1 e2 e3) = Node "ternary conditional expression" [toTree e1, toTree e2, toTree e3]
   toTree (ScalarTerm (String s)) = Node ("scalar: string " ++ s) []
-  toTree (ScalarTerm (Number (Right i))) = Node ("scalar: number " ++ show i) []
-  toTree (ScalarTerm (Number (Left i))) = Node ("scalar: number " ++ show i) []
+  toTree (ScalarTerm number) = toTree number
+  toTree (ScalarTerm number) = toTree number
+  toTree (AliasTerm alias) = toTree alias
 
 instance Treeable Scalar where
   toTree (Number (Right i)) = Node ("integer:" ++ show i) []
