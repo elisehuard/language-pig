@@ -17,7 +17,7 @@ import Language.Pig.Parser.AST
 
 -- Lexer
 
-specialChar = oneOf "_" -- TODO only allow double colon
+specialChar = oneOf "_"
 
 pigLanguageDef :: LanguageDef st
 pigLanguageDef = emptyDef {
@@ -53,16 +53,29 @@ whiteSpace = Token.whiteSpace lexer
 parens = Token.parens lexer
 lexeme = Token.lexeme lexer
 
--- TODO: create parser to handle double colon.
+-- parser to handle double colon.
 pigIdentifier = try(detailedIdentifier) <|> identifier
-
 detailedIdentifier :: Parser String
 detailedIdentifier = lexeme $
                      (intercalate "::") <$> sepBy1 identifierPart (string "::")
-
 identifierPart = (:) <$> letter <*> many1 (alphaNum <|> specialChar)
 
+
 -- Parser: top-down
+
+parseString :: [Char] -> Root
+parseString input = case parsePig input of
+    Left msg -> error (show msg)
+    Right p -> p
+
+parseFile :: FilePath -> IO String
+parseFile filename =
+  do
+     x <- readFile (filename)
+     return $ show $ parseString x
+
+parsePig :: String -> Either ParseError Root
+parsePig input = parse pigParser "pigParser error" input
 
 pigParser :: Parser Root
 pigParser = whiteSpace >> statements
@@ -302,19 +315,3 @@ tuple = Tuple <$> parens (sepBy name comma)
 
 name :: Parser Alias
 name = Identifier <$> pigIdentifier
-
--- top-level parse functions
-
-parsePig :: String -> Either ParseError Root
-parsePig input = parse pigParser "pigParser error" input
-
-parseString :: [Char] -> Root
-parseString input = case parsePig input of
-    Left msg -> error (show msg)
-    Right p -> p
-
-parseFile :: FilePath -> IO String
-parseFile filename =
-  do
-     x <- readFile (filename)
-     return $ show $ parseString x
