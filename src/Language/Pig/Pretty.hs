@@ -19,7 +19,6 @@ class Treeable a where
   toTree :: a -> (Tree String)
 
 instance Treeable Root where
-  toTree (Seq []) = Node "empty ast" []
   toTree (Seq stmts) = Node "sequence of statements" (map toTree stmts)
 
 instance Treeable Statement where
@@ -89,7 +88,6 @@ instance Treeable Expression where
   toTree (BooleanBinary o e1 e2) = Node "boolean binary expression" [toTree o, toTree e1, toTree e2]
   toTree (BinCond e1 e2 e3) = Node "ternary conditional expression" [toTree e1, toTree e2, toTree e3]
   toTree (ScalarTerm (String s)) = Node ("scalar: string " ++ s) []
-  toTree (ScalarTerm number) = toTree number
   toTree (ScalarTerm number) = toTree number
   toTree (AliasTerm alias) = toTree alias
 
