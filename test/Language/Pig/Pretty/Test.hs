@@ -3,7 +3,7 @@ where
 
 import Test.Framework (testGroup, Test)
 import Test.Framework.Providers.HUnit
-import Test.Framework.Providers.QuickCheck (testProperty)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit hiding (Test)
 import Test.QuickCheck (Arbitrary, arbitrary, oneof)
 import Control.Applicative ((<$>), (<*>))
