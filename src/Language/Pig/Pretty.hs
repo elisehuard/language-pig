@@ -70,6 +70,7 @@ instance Treeable Function where
 
 instance Treeable Argument where
   toTree (StringArgument (String s)) = Node ("string argument: \"" ++ s ++ "\"") []
+  toTree (StringArgument (Number s)) = Node ("number argument: " ++ show s) []
   toTree (AliasArgument (Identifier s)) = Node ("identifier argument: \"" ++ s ++ "\"") []
 
 instance Treeable TupleDef where

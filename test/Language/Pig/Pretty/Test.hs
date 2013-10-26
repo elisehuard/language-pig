@@ -3,7 +3,7 @@ where
 
 import Test.Framework (testGroup, Test)
 import Test.Framework.Providers.HUnit
-import Test.Framework.Providers.QuickCheck (testProperty)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit hiding (Test)
 import Test.QuickCheck (Arbitrary, arbitrary, oneof)
 import Control.Applicative ((<$>), (<*>))
@@ -47,7 +47,7 @@ identifier: active_users                                                        
 testPrint :: Root -> String -> Assertion
 testPrint tree expected = expected @=? prettyPrint tree
 
-prop_printed tree = (pack "doodoo") `isInfixOf` (pack $ prettyPrint tree)
+prop_printed tree = (pack "statement") `isInfixOf` (pack $ prettyPrint tree)
       where types = (tree :: Root)
 
 instance Arbitrary Root where
