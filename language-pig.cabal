@@ -3,8 +3,8 @@
 
 name:                language-pig
 version:             0.1.0.0
-synopsis:            Pig parser in haskell.
--- description:         
+synopsis:            Pig parser in Haskell
+description:         Haskell parser for the Pig query language.
 license:             MIT
 license-file:        LICENSE
 author:              Elise Huard
@@ -13,6 +13,10 @@ maintainer:          elise@jabberwocky.eu
 category:            Language
 build-type:          Simple
 cabal-version:       >=1.8
+
+Source-Repository head
+  Type: git
+  Location: git://github.com/elisehuard/language-pig.git
 
 library
   hs-source-dirs: src
