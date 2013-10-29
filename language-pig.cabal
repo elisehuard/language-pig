@@ -4,6 +4,7 @@
 name:                language-pig
 version:             0.1.0.0
 synopsis:            Pig parser in haskell.
+description:         Parser and pretty printer for the Apache Pig scripting language (http://pig.apache.org/). The current version is implemented using Parsec parser combinators.
 -- description:         
 license:             MIT
 license-file:        LICENSE
@@ -13,6 +14,10 @@ maintainer:          elise@jabberwocky.eu
 category:            Language
 build-type:          Simple
 cabal-version:       >=1.8
+
+source-repository head
+  type:     git
+  location: https://github.com/elisehuard/language-pig
 
 library
   hs-source-dirs: src
