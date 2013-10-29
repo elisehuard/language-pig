@@ -41,7 +41,7 @@ identifier: active_users                                                        
 -}
   , testCase "expression" (testPrint (Seq [Assignment (Identifier "users") (ForeachClause (Identifier "users") (GenBlock [TupleFieldGlob,ExpressionTransform (Binary Divide (Binary Modulo (AliasTerm (Identifier "user_id")) (ScalarTerm (Number (Left 100)))) (ScalarTerm (Number (Left 10)))) (Identifier "cohort")]))]) 
                                      "                                                 sequence of statements                                                \n                                                           |                                                           \n                                                       assignment                                                      \n                                                           |                                                           \n         -----------------------------------------------------------                                                   \n        /                                                           \\                                                  \nidentifier: users                                             FOREACH clause                                           \n                                                                    |                                                  \n                            --------------------------------------------------                                         \n                           /                                                  \\                                        \n                   identifier: users                                 transformation block                              \n                                                                              |                                        \n                                       ----------------------------------------                                        \n                                      /                                        \\                                       \n                                      *                                    calculate                                   \n                                                                               |                                       \n                                                                      ---------------------------------------          \n                                                                     /                                       \\         \n                                                             binary expression                       identifier: cohort\n                                                                     |                                                 \n                                            --------------------------------------------------                         \n                                           /                        |                         \\                        \n                                         Divide             binary expression             double:10                    \n                                                                    |                                                  \n                                                    ------------------------------                                     \n                                                   /              |               \\                                    \n                                                 Modulo  identifier: user_id  double:100                               \n")
---  , testProperty "pretty prints to ast" prop_printed
+  , testProperty "pretty prints to ast" prop_printed
   ]
 
 testPrint :: Root -> String -> Assertion
@@ -114,11 +114,23 @@ instance Arbitrary Field where
   arbitrary = Field <$> arbitrary <*> arbitrary
 
 instance Arbitrary Expression where
-  arbitrary = oneof [ Unary <$> arbitrary <*> arbitrary
-                    , Binary <$> arbitrary <*> arbitrary <*> arbitrary
-                    , BinCond <$> arbitrary <*> arbitrary <*> arbitrary
-                    , ScalarTerm <$> arbitrary
+  arbitrary = oneof [ -- Unary <$> arbitrary <*> arbitrary
+--                    , Binary <$> arbitrary <*> arbitrary <*> arbitrary
+--                    , BinCond <$> arbitrary <*> arbitrary <*> arbitrary
+                      ScalarTerm <$> arbitrary
                     , AliasTerm <$> arbitrary ]
+
+{-
+  arbitrary = sized arbExpression'
+arbExpression :: Int -> Gen a
+arbExpression 0 = ScalarTerm . Number <*> arbitrary
+arbExpression n = do
+                (Positive m) <- arbitrary
+                let n' = n / (m + 1)
+                f <- mapM (arbExpression n') [1..m]
+                return $ (Binary <$> arbitrary <*> f <*> f
+
+-}
 
 instance Arbitrary BooleanExpression where
   arbitrary = oneof [ BooleanExpression <$> arbitrary <*> arbitrary <*> arbitrary
