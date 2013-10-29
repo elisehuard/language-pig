@@ -295,9 +295,9 @@ booleanOperators = [ [Prefix (reservedOp "not" >> return (BooleanUnary Not))]
                    , [Infix  (reservedOp "and" >> return (BooleanBinary And)) AssocLeft]
                    , [Infix  (reservedOp "or"  >> return (BooleanBinary Or)) AssocLeft]]
 
-comparisonExpression :: Parser Expression
-comparisonExpression = flippedBinary <$> pigTerm <*> relation <*> pigTerm
-                      where flippedBinary expr1 op expr2 = Binary op expr1 expr2
+comparisonExpression :: Parser BooleanExpression
+comparisonExpression = flippedBooleanExpression <$> pigTerm <*> relation <*> pigTerm
+                      where flippedBooleanExpression expr1 op expr2 = BooleanExpression op expr1 expr2
 
 -- bincond: boolean expression (==, !=, >, <, >=, <=) (and, or, not)
 relation = (reservedOp ">" >> return Greater) <|>

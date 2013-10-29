@@ -85,12 +85,15 @@ instance Treeable Field where
 instance Treeable Expression where
   toTree (Unary o e) = Node "unary expression" [toTree o, toTree e]
   toTree (Binary o e1 e2) = Node "binary expression" [toTree o, toTree e1, toTree e2]
-  toTree (BooleanUnary o e) = Node "boolean unary expression" [toTree o, toTree e]
-  toTree (BooleanBinary o e1 e2) = Node "boolean binary expression" [toTree o, toTree e1, toTree e2]
   toTree (BinCond e1 e2 e3) = Node "ternary conditional expression" [toTree e1, toTree e2, toTree e3]
   toTree (ScalarTerm (String s)) = Node ("scalar: string " ++ s) []
   toTree (ScalarTerm number) = toTree number
   toTree (AliasTerm alias) = toTree alias
+
+instance Treeable BooleanExpression where
+  toTree (BooleanExpression o e1 e2) = Node "comparison expression" [toTree o, toTree e1, toTree e2]
+  toTree (BooleanUnary o e) = Node "boolean unary expression" [toTree o, toTree e]
+  toTree (BooleanBinary o e1 e2) = Node "boolean binary expression" [toTree o, toTree e1, toTree e2]
 
 instance Treeable Scalar where
   toTree (Number (Right i)) = Node ("integer:" ++ show i) []
@@ -101,6 +104,12 @@ instance Treeable SimpleType where
   toTree c = Node (show c) []
 
 instance Treeable Operator where
+  toTree c = Node (show c) []
+
+instance Treeable BooleanOperator where
+  toTree c = Node (show c) []
+
+instance Treeable ComparisonOperator where
   toTree c = Node (show c) []
 
 prettyPrint :: Root -> String

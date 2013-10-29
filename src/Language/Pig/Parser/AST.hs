@@ -75,12 +75,15 @@ data Field = Field Alias SimpleType
 
 data Expression = Unary Operator Expression
                 | Binary Operator Expression Expression
-                | BooleanUnary Operator Expression
-                | BooleanBinary Operator Expression Expression
-                | BinCond Expression Expression Expression
+                | BinCond BooleanExpression Expression Expression
                 | ScalarTerm Scalar
                 | AliasTerm Alias
                 DERIVE
+
+data BooleanExpression = BooleanExpression ComparisonOperator Expression Expression
+                       | BooleanUnary BooleanOperator BooleanExpression
+                       | BooleanBinary BooleanOperator BooleanExpression BooleanExpression
+                       DERIVE
 
 data Scalar = Number (Either Integer Double)
             | String String
@@ -94,19 +97,23 @@ data SimpleType = Int
                 | ByteArray
                 DERIVE
 
+data BooleanOperator = And
+                     | Or
+                     | Not
+                     DERIVE
+
 data Operator = Neg
               | Add
               | Subtract
               | Multiply
               | Divide
               | Modulo
-              | And
-              | Or
-              | Not
-              | Equal
-              | NotEqual
-              | Greater
-              | Less
-              | GreaterEqual
-              | LessEqual
               DERIVE
+
+data ComparisonOperator = Equal
+                        | NotEqual
+                        | Greater
+                        | Less
+                        | GreaterEqual
+                        | LessEqual
+                        DERIVE

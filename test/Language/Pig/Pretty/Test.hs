@@ -116,11 +116,14 @@ instance Arbitrary Field where
 instance Arbitrary Expression where
   arbitrary = oneof [ Unary <$> arbitrary <*> arbitrary
                     , Binary <$> arbitrary <*> arbitrary <*> arbitrary
-                    , BooleanUnary <$> arbitrary <*> arbitrary
-                    , BooleanBinary <$> arbitrary <*> arbitrary <*> arbitrary
                     , BinCond <$> arbitrary <*> arbitrary <*> arbitrary
                     , ScalarTerm <$> arbitrary
                     , AliasTerm <$> arbitrary ]
+
+instance Arbitrary BooleanExpression where
+  arbitrary = oneof [ BooleanExpression <$> arbitrary <*> arbitrary <*> arbitrary
+                    , BooleanUnary <$> arbitrary <*> arbitrary
+                    , BooleanBinary <$> arbitrary <*> arbitrary <*> arbitrary ]
 
 instance Arbitrary Scalar where
   arbitrary = oneof [ Number <$> arbitrary
@@ -130,5 +133,10 @@ instance Arbitrary SimpleType where
   arbitrary = oneof [ return Int , return Long , return Float , return Double , return CharArray , return ByteArray]
 
 instance Arbitrary Operator where
-  arbitrary = oneof [ return Neg , return Add , return Subtract , return Multiply , return Divide , return Modulo , return And
-              , return Or , return Not , return Equal , return NotEqual , return Greater , return Less , return GreaterEqual , return LessEqual ]
+  arbitrary = oneof [ return Neg , return Add , return Subtract , return Multiply , return Divide , return Modulo ]
+
+instance Arbitrary BooleanOperator where
+  arbitrary = oneof [ return And, return Or, return Not ]
+
+instance Arbitrary ComparisonOperator where
+  arbitrary = oneof [ return Equal, return NotEqual, return Greater, return Less, return GreaterEqual, return LessEqual ]
