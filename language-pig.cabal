@@ -18,6 +18,7 @@ Stability:           Experimental
 
 Extra-Source-Files:
   example.pig
+  README.md
 
 source-repository head
   type:     git
