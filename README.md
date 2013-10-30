@@ -2,7 +2,7 @@
 
 Parser and pretty printer for the Apache Pig scripting language (http://pig.apache.org/). The current version is implemented using Parsec parser combinators.
 
-# install #
+# Install #
 
 Cabal project, now on hackage, so the usual
 
@@ -18,7 +18,7 @@ cd language-pig
 cabal install
 ```
 
-# Useage #
+# Use #
 
 Parse an expression:
 
