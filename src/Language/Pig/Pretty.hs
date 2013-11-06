@@ -10,6 +10,8 @@ import Data.List (intercalate)
 import Data.Tree
 import Data.Tree.Pretty
 
+import Control.Applicative ((<$>), (<*>))
+
 -- patterns:
 --  node name + list nodes
 --  node name + literal to display = terminalnode
@@ -113,4 +115,6 @@ instance Treeable ComparisonOperator where
   toTree c = Node (show c) []
 
 prettyPrint :: Root -> String
-prettyPrint ast = drawVerticalTree $ toTree ast
+prettyPrint (Seq []) = "no statements\n"
+prettyPrint (Seq statements) = "sequence of statements:\n" ++
+                                (intercalate "\n" (map drawVerticalTree $ map toTree statements))
