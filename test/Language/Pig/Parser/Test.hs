@@ -5,7 +5,8 @@ import Test.Framework (testGroup, Test)
 import Test.Framework.Providers.HUnit
 import Test.HUnit hiding (Test)
 
-import Control.Monad (liftM)
+import Control.Monad (liftM, guard)
+import Control.Exception
 import Language.Pig.Parser
 import Language.Pig.Parser.Parser
 import Language.Pig.Parser.AST
@@ -58,7 +59,32 @@ parserSuite = testGroup "Parser"
                                              "Seq [Assignment (Identifier \"active_users\") (LoadClause (Filename \"warehouse/active_users/daily/point/{$visit_dates}*\") (Function \"ColumnStorage\" [StringArgument (String \" \")]) (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"user_id\") Long])),Assignment (Identifier \"active_users\") (InnerJoinClause [Join \"users\" \"user_id\",Join \"active_users\" \"user_id\"])]")
    , testCase "case insensitivity of keywords" (testStmt "store report into '$output' using ColumnStorage(',');"
                                                          "Seq [Store (Identifier \"report\") (Directory \"$output\") (Function \"ColumnStorage\" [StringArgument (String \",\")])]")
+   , testCase "input file path" (testFilePath "example.pig" "example.pig")
+--   , testCase "non existant file path" (testFileError "dummy.pig" "")
    ]
 
 testStmt :: String -> String -> Assertion
 testStmt str expected = expected @=? (show $ parseString str)
+
+testFilePath :: String -> String -> Assertion
+testFilePath str expected = do path <- getPath $ parseFile str
+                               assertEqual "same file" expected path
+
+{-
+testFileError :: String -> String -> Assertion
+testFileError str expected = assertException IOError $ parseFile str
+
+assertException :: (Exception e, Eq e) => e -> IO a -> IO ()
+assertException ex action =
+    handleJust isWanted (const $ return ()) $ do
+        action
+        assertFailure $ "Expected exception: " ++ show ex
+  where isWanted = guard . (== ex)
+-}
+
+getPath :: IO PigFile -> IO String
+getPath pig = liftM filePath pig
+
+filePath :: PigFile -> String
+filePath (PigFile path _) = path
+

@@ -10,6 +10,8 @@ import Data.Typeable
 -- http://wiki.apache.org/pig/PigLexer
 -- http://wiki.apache.org/pig/PigParser
 
+data PigFile = PigFile String Root
+
 data Root = Seq [Statement]
             DERIVE
 

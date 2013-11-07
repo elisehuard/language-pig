@@ -26,15 +26,13 @@ Parse an expression:
 parseString :: [Char] -> Root
 ```
 
-Returns an AST (type is the root node).
+Returns an AST (type Root is the root node).
 
 Parse a file:
-
 ```
-parseFile :: FilePath -> IO Root
+parseFile :: FilePath -> IO PigFile
 ```
-
-Returns an AST (type = Root, which is the root node).
+PigFile contains the Root (of AST) and the file name.
 
 Pretty print the produced tree:
 ```

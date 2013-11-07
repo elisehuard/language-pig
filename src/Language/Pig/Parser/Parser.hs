@@ -68,8 +68,8 @@ parseString input = case parsePig input of
     Left msg -> error (show msg)
     Right p -> p
 
-parseFile :: FilePath -> IO Root
-parseFile filename = parseString <$> readFile (filename)
+parseFile :: FilePath -> IO PigFile
+parseFile filename = ((PigFile filename) . parseString) <$> readFile (filename)
 
 parsePig :: String -> Either ParseError Root
 parsePig input = parse pigParser "pigParser error" input
