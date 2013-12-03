@@ -17,7 +17,7 @@ data Root = Seq [Statement]
 
 data Statement = Assignment Alias OpClause
                | Describe Alias
-               | DefineUDF Alias Command DefineSpec
+               | DefineUDF Alias Aliasable [DefineSpec]
                | Store Alias Path Function
                | Register Library
                DERIVE
@@ -58,6 +58,10 @@ data Path = Filename String
           DERIVE
 
 data Library = Library String
+               DERIVE
+
+data Aliasable = AliasCommand Command
+               | AliasFunction Function
                DERIVE
 
 data Command = Exec String

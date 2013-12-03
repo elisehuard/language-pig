@@ -47,7 +47,10 @@ parserSuite = testGroup "Parser"
                                         "Seq [Describe (Identifier \"visits\")]")
 
    , testCase "define stmt" (testStmt "define RESOLVE `python delta.py $date` SHIP('delta.py');"
-                                      "Seq [DefineUDF (Identifier \"RESOLVE\") (Exec \"python delta.py $date\") (Ship (Filename \"delta.py\"))]")
+                                      "Seq [DefineUDF (Identifier \"RESOLVE\") (AliasCommand (Exec \"python delta.py $date\")) [Ship (Filename \"delta.py\")]]")
+
+   , testCase "define stmt second type" (testStmt "DEFINE ISOToUnix org.apache.pig.piggybank.evaluation.datetime.convert.ISOToUnix();"
+                                                  "Seq [DefineUDF (Identifier \"ISOToUnix\") (AliasFunction (Function \"org.apache.pig.piggybank.evaluation.datetime.convert.ISOToUnix\" [])) []]")
 
    , testCase "stream stmt" (testStmt "report = STREAM report THROUGH RESOLVE AS (day:chararray, herd:chararray, day_visits:int, visits:int);"
                                       "Seq [Assignment (Identifier \"report\") (StreamClause (Identifier \"report\") (Identifier \"RESOLVE\") (TupleDef [Field (Identifier \"day\") CharArray,Field (Identifier \"herd\") CharArray,Field (Identifier \"day_visits\") Int,Field (Identifier \"visits\") Int]))]")

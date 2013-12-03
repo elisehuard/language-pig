@@ -54,6 +54,10 @@ instance Arbitrary GroupBy where
   arbitrary = oneof [ SingleColumn <$> arbitrary
                     , MultipleColumn <$> arbitrary ]
 
+instance Arbitrary Aliasable where
+  arbitrary = oneof [ AliasCommand <$> arbitrary
+                    , AliasFunction <$> arbitrary ]
+
 instance Arbitrary Transform where
   arbitrary = oneof [ Flatten <$> arbitrary <*> arbitrary
                     , return TupleFieldGlob

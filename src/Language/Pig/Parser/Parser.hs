@@ -62,6 +62,11 @@ detailedIdentifier = lexeme $
                      (intercalate "::") <$> sepBy1 identifierPart (string "::")
 identifierPart = (:) <$> letter <*> many1 (alphaNum <|> specialChar)
 
+functionIdentifier = try(dottedIdentifier) <|> identifier
+dottedIdentifier :: Parser String
+dottedIdentifier = lexeme $
+                     (intercalate ".") <$> sepBy1 identifierPart (string ".")
+
 
 -- Parser: top-down
 
@@ -102,8 +107,13 @@ define :: Parser Statement
 define = DefineUDF <$>
            (reserved "define" *>
            pigVar) <*>
-           executable <*>
-           shipClause -- could be input, output, ship, cache, stderr in full pig grammar
+           aliasable <*>
+           defineSpec -- could be input, output, ship, cache, stderr in full pig grammar
+
+aliasable :: Parser Aliasable
+aliasable = try (AliasCommand <$>
+               executable) <|>
+            (AliasFunction <$> pigFunc)
 
 store :: Parser Statement
 store = Store <$>
@@ -118,6 +128,7 @@ register :: Parser Statement
 register = Register <$>
             (reserved "REGISTER" *>
              pigQuotedString Library)
+
 
 opClause :: Parser OpClause
 opClause = loadClause
@@ -170,6 +181,9 @@ joinTable = Join <$>
                (reserved "BY" *>
                pigIdentifier)
 
+defineSpec :: Parser [DefineSpec]
+defineSpec = many shipClause
+
 shipClause :: Parser DefineSpec
 shipClause = Ship . Filename <$> 
                (reserved "SHIP" *>
@@ -183,7 +197,7 @@ pigQuotedString constructor = constructor <$> quotedString
 
 pigFunc :: Parser Function
 pigFunc = Function <$>
-            identifier <*>
+            functionIdentifier <*>
             parens arguments
 
 arguments :: Parser [Argument]

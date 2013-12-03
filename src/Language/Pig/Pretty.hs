@@ -55,6 +55,13 @@ instance Treeable Transform where
 instance Treeable Join where
   toTree (Join a b) = Node ("join " ++ a ++ " by " ++ b) []
 
+instance Treeable Aliasable where
+  toTree (AliasCommand p) = toTree p
+  toTree (AliasFunction p) = toTree p
+
+instance Treeable [DefineSpec] where
+  toTree specs = Node "define specs" (map toTree specs)
+
 instance Treeable DefineSpec where
   toTree (Ship p) = Node "SHIP" [toTree p]
 
