@@ -28,6 +28,7 @@ instance Treeable Statement where
   toTree (Describe a) = Node "describe statement" [toTree a]
   toTree (DefineUDF a b c) = Node "define UDF statement" [toTree a, toTree b, toTree c]
   toTree (Store a b c) = Node "store statement" [toTree a, toTree b, toTree c]
+  toTree (Register a) = Node "register statement" [toTree a]
 
 instance Treeable OpClause where
   toTree (LoadClause a b c) = Node "LOAD clause" [toTree a, toTree b, toTree c]
@@ -112,6 +113,9 @@ instance Treeable BooleanOperator where
   toTree c = Node (show c) []
 
 instance Treeable ComparisonOperator where
+  toTree c = Node (show c) []
+
+instance Treeable Library where
   toTree c = Node (show c) []
 
 prettyPrint :: Root -> String
