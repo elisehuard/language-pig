@@ -35,6 +35,7 @@ pigLanguageDef = emptyDef {
                                    "DEFINE",
                                    "STREAM", "THROUGH",
                                    "STORE", "INTO", "USING",
+                                   "REGISTER",
                                    "int", "long", "float", "double", "chararray", "bytearray", "*"]
           , Token.reservedOpNames = ["=", "+", "-", "*", "/", "%", "?", ":"]
           , Token.caseSensitive = False
@@ -81,7 +82,7 @@ statements :: Parser Root
 statements = Seq <$> endBy statement semi
 
 statement :: Parser Statement
-statement = query <|> describe <|> define <|> store
+statement = query <|> describe <|> define <|> store <|> register
 
 query :: Parser Statement
 query = Assignment <$> 
@@ -107,6 +108,10 @@ store = Store <$>
         (reserved "USING" *>
          pigFunc)
 
+register :: Parser Statement
+register = Register <$>
+            (reserved "REGISTER" *>
+             pigQuotedString Library)
 
 opClause :: Parser OpClause
 opClause = loadClause

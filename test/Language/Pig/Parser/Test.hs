@@ -55,6 +55,9 @@ parserSuite = testGroup "Parser"
    , testCase "store stmt" (testStmt "STORE report INTO '$output' USING ColumnStorage(',');"
                                      "Seq [Store (Identifier \"report\") (Directory \"$output\") (Function \"ColumnStorage\" [StringArgument (String \",\")])]")
 
+   , testCase "register stmt" (testStmt "REGISTER 'lib/datafu-0.0.10.jar';"
+                                        "Seq [Register (Library \"lib/datafu-0.0.10.jar\")]")
+
    , testCase "several statements" (testStmt "active_users = LOAD 'warehouse/active_users/daily/point/{$visit_dates}*' USING ColumnStorage(' ') AS (date:chararray, user_id:long);\nactive_users = JOIN users BY user_id, active_users BY user_id;" 
                                              "Seq [Assignment (Identifier \"active_users\") (LoadClause (Filename \"warehouse/active_users/daily/point/{$visit_dates}*\") (Function \"ColumnStorage\" [StringArgument (String \" \")]) (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"user_id\") Long])),Assignment (Identifier \"active_users\") (InnerJoinClause [Join \"users\" \"user_id\",Join \"active_users\" \"user_id\"])]")
    , testCase "case insensitivity of keywords" (testStmt "store report into '$output' using ColumnStorage(',');"

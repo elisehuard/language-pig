@@ -19,6 +19,7 @@ data Statement = Assignment Alias OpClause
                | Describe Alias
                | DefineUDF Alias Command DefineSpec
                | Store Alias Path Function
+               | Register Library
                DERIVE
 
 data OpClause = LoadClause Path Function TupleDef
@@ -55,6 +56,9 @@ data Alias = Identifier String
 data Path = Filename String
           | Directory String
           DERIVE
+
+data Library = Library String
+               DERIVE
 
 data Command = Exec String
                DERIVE
