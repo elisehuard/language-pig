@@ -32,7 +32,7 @@ Parse a file:
 ```
 parseFile :: FilePath -> IO PigFile
 ```
-PigFile contains the Root (of AST) and the file name.
+PigFile contains the Root (of AST) and the file name. If you want just the AST, parseFileForAST would do it.
 
 Pretty print the produced tree:
 ```
@@ -42,5 +42,5 @@ putStrLn $ prettyPrint tree
 So to round it up, if you want to parse and pretty print the parsed AST of a Pig file (using Control.Applicative (<$>))
 
 ```
-prettyPrint <$> parseFile "example.pig" >>= putStrLn
+prettyPrint <$> parseFileForAST "example.pig" >>= putStrLn
 ```

@@ -1,6 +1,7 @@
 module Language.Pig.Parser.Parser (
   parseString
   , parseFile
+  , parseFileForAST
   , module Language.Pig.Parser.AST
 ) where
 
@@ -71,6 +72,11 @@ parseString input = case parsePig input of
 
 parseFile :: FilePath -> IO PigFile
 parseFile filename = ((PigFile filename) . parseString) <$> readFile (filename)
+
+parseFileForAST filename = getAST <$> parseFile filename
+
+getAST :: PigFile -> Root
+getAST (PigFile _ ast) = ast
 
 parsePig :: String -> Either ParseError Root
 parsePig input = parse pigParser "pigParser error" input
