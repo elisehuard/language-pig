@@ -27,6 +27,11 @@ parserSuite = testGroup "Parser"
 
    , testCase "foreach stmt with ternary if-then-else" (testStmt "users = FOREACH users GENERATE *, (cohort <= 4 ? '04' : '59') AS herd;"
                                                                  "Seq [Assignment (Identifier \"users\") (ForeachClause (Identifier \"users\") (GenBlock [TupleFieldGlob,ExpressionTransform (BinCond (BooleanExpression LessEqual (AliasTerm (Identifier \"cohort\")) (ScalarTerm (Number (Left 4)))) (ScalarTerm (String \"04\")) (ScalarTerm (String \"59\"))) (Identifier \"herd\")]))]")
+   , testCase "foreach stmt with ternary if-then-else complex" (testStmt "desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_date, device_date AS device_date, user_id AS user_id, (server_date != '0' AND device_date != '0' ? (ISOToUnix(CustomFormatToISO(server_date,'YYYY-MM-dd'))-ISOToUnix(CustomFormatToISO(device_date,'YYYY-MM-dd')))/86400000 : 0) AS datediff;"
+                                                                          "")
+{-
+desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_date, device_date AS device_date, user_id AS user_id, (server_date != '0' AND device_date != '0' ? (ISOToUnix(CustomFormatToISO(server_date,'YYYY-MM-dd'))-ISOToUnix(CustomFormatToISO(device_date,'YYYY-MM-dd')))/86400000 : 0) AS datediff;
+-}
    , testCase "foreach stmt with flatten and function" (testStmt "report = FOREACH report GENERATE FLATTEN(group) AS (date, herd), COUNT(active_users) AS day_visits;"
                                                                  "Seq [Assignment (Identifier \"report\") (ForeachClause (Identifier \"report\") (GenBlock [Flatten \"group\" (Tuple [Identifier \"date\",Identifier \"herd\"]),FunctionTransform (Function \"COUNT\" [AliasArgument (Identifier \"active_users\")]) (Identifier \"day_visits\")]))]")
    , testCase "foreach stmt with qualified field names" (testStmt "report = FOREACH report GENERATE report::date AS date, report::herd AS herd, report::day_visits AS day_visits, visits::visits AS visits;"
