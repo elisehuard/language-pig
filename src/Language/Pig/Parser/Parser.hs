@@ -28,7 +28,7 @@ pigLanguageDef = emptyDef {
           , Token.nestedComments = True
           , Token.identStart     = letter
           , Token.identLetter    = alphaNum <|> specialChar
-          , Token.reservedNames = ["LOAD", "USING", "AS", -- todo case insensitivity of these keywords
+          , Token.reservedNames = ["LOAD", "USING", "AS",
                                    "FOREACH", "GENERATE", "FLATTEN",
                                    "JOIN", "BY",
                                    "GROUP",
@@ -38,7 +38,7 @@ pigLanguageDef = emptyDef {
                                    "STORE", "INTO", "USING",
                                    "REGISTER",
                                    "int", "long", "float", "double", "chararray", "bytearray", "*"]
-          , Token.reservedOpNames = ["=", "+", "-", "*", "/", "%", "?", ":"]
+          , Token.reservedOpNames = ["=", "+", "-", "*", "/", "%", "?", ":", "and", "or", "not"]
           , Token.caseSensitive = False
         }
 
@@ -315,8 +315,11 @@ booleanTerm = parens booleanExpression
           <|> comparisonExpression
 
 booleanOperators = [ [Prefix (reservedOp "not" >> return (BooleanUnary Not))]
+                   , [Prefix (reservedOp "NOT" >> return (BooleanUnary Not))]
                    , [Infix  (reservedOp "and" >> return (BooleanBinary And)) AssocLeft]
-                   , [Infix  (reservedOp "or"  >> return (BooleanBinary Or)) AssocLeft]]
+                   , [Infix  (reservedOp "AND" >> return (BooleanBinary And)) AssocLeft]
+                   , [Infix  (reservedOp "or"  >> return (BooleanBinary Or)) AssocLeft]
+                   , [Infix  (reservedOp "OR"  >> return (BooleanBinary Or)) AssocLeft]]
 
 comparisonExpression :: Parser BooleanExpression
 comparisonExpression = flippedBooleanExpression <$> pigTerm <*> relation <*> pigTerm
