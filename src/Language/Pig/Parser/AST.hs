@@ -42,6 +42,7 @@ data Transform = Flatten String Tuple -- foreach flatten transform
                | ExpressionTransform Expression Alias
                | FunctionTransform Function Alias
                | EnvTransform Scalar Alias
+               | IdentityTransform Alias
                DERIVE
 
 data Join = Join String String

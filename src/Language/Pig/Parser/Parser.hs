@@ -247,7 +247,8 @@ transform = try(aliasTransform)
          <|> flattenTransform
          <|> tupleFieldGlob
          <|> expressionTransform
-         <|> functionTransform
+         <|> try(functionTransform)
+         <|> identityTransform
          <|> envTransform
 
 flattenTransform :: Parser Transform
@@ -280,6 +281,11 @@ envTransform = EnvTransform <$>
                   pigQuotedString String <*>
                   (reserved "AS" *>
                    (Identifier <$> identifier))
+
+-- field is just used as-is from input file
+identityTransform :: Parser Transform
+identityTransform = IdentityTransform <$>
+                      (Identifier <$> pigIdentifier)
 
 -- general expression:
 -- fieldExpression or literal or function or binary operation (+-*/%) or bincond (?:)
