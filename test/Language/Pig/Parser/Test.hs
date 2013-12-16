@@ -63,6 +63,8 @@ desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_dat
    , testCase "stream stmt" (testStmt "report = STREAM report THROUGH RESOLVE AS (day:chararray, herd:chararray, day_visits:int, visits:int);"
                                       "Seq [Assignment (Identifier \"report\") (StreamClause (Identifier \"report\") (Identifier \"RESOLVE\") (TupleDef [Field (Identifier \"day\") CharArray,Field (Identifier \"herd\") CharArray,Field (Identifier \"day_visits\") Int,Field (Identifier \"visits\") Int]))]")
 
+   , testCase "distinct stmt" (testStmt "desktop_client_dates3 =  DISTINCT desktop_client_dates2;"
+                                        "Seq [Assignment (Identifier \"desktop_client_dates3\") (DistinctClause (Identifier \"desktop_client_dates2\"))]")
    , testCase "store stmt" (testStmt "STORE report INTO '$output' USING ColumnStorage(',');"
                                      "Seq [Store (Identifier \"report\") (Directory \"$output\") (Function \"ColumnStorage\" [ScalarTerm (String \",\")])]")
 

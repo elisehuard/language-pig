@@ -38,6 +38,7 @@ pigLanguageDef = emptyDef {
                                    "STREAM", "THROUGH",
                                    "STORE", "INTO", "USING",
                                    "REGISTER",
+                                   "DISTINCT",
                                    "int", "long", "float", "double", "chararray", "bytearray", "*"]
           , Token.reservedOpNames = ["=", "+", "-", "*", "/", "%", "?", ":", "and", "or", "not"]
           , Token.caseSensitive = False
@@ -140,6 +141,7 @@ opClause = loadClause
        <|> innerJoinClause
        <|> groupClause
        <|> streamClause
+       <|> distinctClause
 
 loadClause :: Parser OpClause
 loadClause = LoadClause <$>
@@ -179,6 +181,11 @@ streamClause = StreamClause <$>
                 pigVar) <*>
                 (reserved "AS" *>
                 pigTupleDef)
+
+distinctClause :: Parser OpClause
+distinctClause = DistinctClause <$>
+                   (reserved "DISTINCT" *>
+                    pigVar)
 
 joinTable :: Parser Join
 joinTable = Join <$>

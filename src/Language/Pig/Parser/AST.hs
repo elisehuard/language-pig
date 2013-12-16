@@ -27,6 +27,7 @@ data OpClause = LoadClause Path Function TupleDef
               | GroupClause Alias GroupBy
               | InnerJoinClause [Join]
               | StreamClause Alias Alias TupleDef
+              | DistinctClause Alias
               DERIVE
 
 data GenBlock = GenBlock [Transform]
