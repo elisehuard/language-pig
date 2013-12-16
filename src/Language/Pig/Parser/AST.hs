@@ -88,6 +88,7 @@ data Expression = Unary Operator Expression
                 | BinCond BooleanExpression Expression Expression
                 | ScalarTerm Scalar
                 | AliasTerm Alias
+                | FunctionTerm Function
                 DERIVE
 
 data BooleanExpression = BooleanExpression ComparisonOperator Expression Expression

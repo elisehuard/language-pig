@@ -297,6 +297,7 @@ pigTerm :: Parser Expression
 pigTerm = (ScalarTerm . String <$> quotedString)
       <|> (ScalarTerm <$> number)
       <|> generalExpression
+      <|> try(FunctionTerm <$> pigFunc)
       <|> (AliasTerm <$> name)
 
 number = Number <$> naturalOrFloat -- for now - could be naturalOrFloat for inclusion
