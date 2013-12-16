@@ -2,6 +2,7 @@ module Language.Pig.Parser.Parser (
   parseString
   , parseFile
   , parseFileForAST
+  , parseTst
   , module Language.Pig.Parser.AST
 ) where
 
@@ -86,6 +87,9 @@ getAST (PigFile _ ast) = ast
 parsePig :: String -> Either ParseError Root
 parsePig input = parse pigParser "pigParser error" input
 
+parseTst :: String -> Either ParseError Expression
+parseTst input = parse conditional "test error" input
+
 pigParser :: Parser Root
 pigParser = whiteSpace >> statements
 
@@ -146,6 +150,7 @@ loadClause = LoadClause <$>
                 (reserved "AS" *>
                 pigTupleDef)
 
+
 -- foreach: only the block (outer bag) version
 foreachClause :: Parser OpClause
 foreachClause = ForeachClause <$>
@@ -200,12 +205,12 @@ pigFunc = Function <$>
             functionIdentifier <*>
             parens arguments
 
-arguments :: Parser [Argument]
+arguments :: Parser [Expression]
 arguments = sepBy argument comma
 
-argument :: Parser Argument
-argument = (StringArgument . String <$> quotedString) <|> 
-           (AliasArgument <$> pigVar)
+argument :: Parser Expression
+argument = calculation
+
 
 quotedString :: Parser String
 quotedString = (char '\'' *> (many $ noneOf "\'")) <* char '\'' <* whiteSpace -- doesn't take into account escaped quotes

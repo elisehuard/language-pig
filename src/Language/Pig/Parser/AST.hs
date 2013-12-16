@@ -67,12 +67,8 @@ data Aliasable = AliasCommand Command
 data Command = Exec String
                DERIVE
 
-data Function = Function String [Argument]
+data Function = Function String [Expression]
                 DERIVE
-
-data Argument = StringArgument Scalar
-              | AliasArgument Alias
-              DERIVE
 
 data TupleDef = TupleDef [Field]
                 DERIVE
