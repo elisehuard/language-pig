@@ -49,7 +49,7 @@ data Transform = Flatten String Tuple -- foreach flatten transform
 data Join = Join String String
             DERIVE
 
-data DefineSpec = Ship Path
+data DefineSpec = Ship [Path]
                   DERIVE
 
 data Alias = Identifier String

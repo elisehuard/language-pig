@@ -63,7 +63,7 @@ instance Treeable [DefineSpec] where
   toTree specs = Node "define specs" (map toTree specs)
 
 instance Treeable DefineSpec where
-  toTree (Ship p) = Node "SHIP" [toTree p]
+  toTree (Ship p) = Node "SHIP" (map toTree p)
 
 instance Treeable Alias where
   toTree (Identifier s) = Node ("identifier: " ++ s) []

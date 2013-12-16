@@ -55,10 +55,13 @@ desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_dat
                                         "Seq [Describe (Identifier \"visits\")]")
 
    , testCase "define stmt" (testStmt "define RESOLVE `python delta.py $date` SHIP('delta.py');"
-                                      "Seq [DefineUDF (Identifier \"RESOLVE\") (AliasCommand (Exec \"python delta.py $date\")) [Ship (Filename \"delta.py\")]]")
+                                      "Seq [DefineUDF (Identifier \"RESOLVE\") (AliasCommand (Exec \"python delta.py $date\")) [Ship [Filename \"delta.py\"]]]")
 
    , testCase "define stmt second type" (testStmt "DEFINE ISOToUnix org.apache.pig.piggybank.evaluation.datetime.convert.ISOToUnix();"
                                                   "Seq [DefineUDF (Identifier \"ISOToUnix\") (AliasFunction (Function \"org.apache.pig.piggybank.evaluation.datetime.convert.ISOToUnix\" [])) []]")
+
+   , testCase "define stmt with ship and 2 args" (testStmt "define RESOLVE `python geoip-resolve.py -f 4 -d \"\t\"` SHIP('geoip-resolve.py','GeoLiteCity.dat');"
+                                                           "Seq [DefineUDF (Identifier \"RESOLVE\") (AliasCommand (Exec \"python geoip-resolve.py -f 4 -d \\\"\\t\\\"\")) [Ship [Filename \"geoip-resolve.py\",Filename \"GeoLiteCity.dat\"]]]")
 
    , testCase "stream stmt" (testStmt "report = STREAM report THROUGH RESOLVE AS (day:chararray, herd:chararray, day_visits:int, visits:int);"
                                       "Seq [Assignment (Identifier \"report\") (StreamClause (Identifier \"report\") (Identifier \"RESOLVE\") (TupleDef [Field (Identifier \"day\") CharArray,Field (Identifier \"herd\") CharArray,Field (Identifier \"day_visits\") Int,Field (Identifier \"visits\") Int]))]")

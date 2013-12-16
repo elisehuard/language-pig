@@ -197,9 +197,12 @@ defineSpec :: Parser [DefineSpec]
 defineSpec = many shipClause
 
 shipClause :: Parser DefineSpec
-shipClause = Ship . Filename <$> 
+shipClause = Ship <$> 
                (reserved "SHIP" *>
-                parens quotedString)
+                parens shipArgs)
+
+shipArgs :: Parser [Path]
+shipArgs = sepBy1 (Filename <$> quotedString) comma
 
 pigVar :: Parser Alias
 pigVar = Identifier <$> pigIdentifier
