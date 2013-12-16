@@ -17,7 +17,7 @@ parserSuite = testGroup "Parser"
                                           "Seq [Assignment (Identifier \"users\") (LoadClause (Filename \"sorted_log/user_registration/$date/*\") (Function \"LogStorage\" []) (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"time\") CharArray,Field (Identifier \"user_id\") Long]))]")
 
    , testCase "load statement 2" (testStmt "active_users = LOAD 'warehouse/active_users/daily/point/{$visit_dates}*' USING ColumnStorage(' ') AS (date:chararray, user_id:long);"
-                                           "Seq [Assignment (Identifier \"active_users\") (LoadClause (Filename \"warehouse/active_users/daily/point/{$visit_dates}*\") (Function \"ColumnStorage\" [StringArgument (String \" \")]) (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"user_id\") Long]))]")
+                                           "Seq [Assignment (Identifier \"active_users\") (LoadClause (Filename \"warehouse/active_users/daily/point/{$visit_dates}*\") (Function \"ColumnStorage\" [ScalarTerm (String \" \")]) (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"user_id\") Long]))]")
 
    , testCase "foreach stmt with flatten" (testStmt "users = FOREACH users GENERATE FLATTEN(group) AS (date, herd);" 
                                                     "Seq [Assignment (Identifier \"users\") (ForeachClause (Identifier \"users\") (GenBlock [Flatten \"group\" (Tuple [Identifier \"date\",Identifier \"herd\"])]))]")
@@ -28,12 +28,12 @@ parserSuite = testGroup "Parser"
    , testCase "foreach stmt with ternary if-then-else" (testStmt "users = FOREACH users GENERATE *, (cohort <= 4 ? '04' : '59') AS herd;"
                                                                  "Seq [Assignment (Identifier \"users\") (ForeachClause (Identifier \"users\") (GenBlock [TupleFieldGlob,ExpressionTransform (BinCond (BooleanExpression LessEqual (AliasTerm (Identifier \"cohort\")) (ScalarTerm (Number (Left 4)))) (ScalarTerm (String \"04\")) (ScalarTerm (String \"59\"))) (Identifier \"herd\")]))]")
    , testCase "foreach stmt with ternary if-then-else complex" (testStmt "desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_date, device_date AS device_date, user_id AS user_id, (server_date != '0' AND device_date != '0' ? (ISOToUnix(CustomFormatToISO(server_date,'YYYY-MM-dd'))-ISOToUnix(CustomFormatToISO(device_date,'YYYY-MM-dd')))/86400000 : 0) AS datediff;"
-                                                                          "")
+                                                                          "Seq [Assignment (Identifier \"desktop_client_dates\") (ForeachClause (Identifier \"desktop_client\") (GenBlock [AliasTransform (Identifier \"server_date\") (Identifier \"server_date\"),AliasTransform (Identifier \"device_date\") (Identifier \"device_date\"),AliasTransform (Identifier \"user_id\") (Identifier \"user_id\"),ExpressionTransform (BinCond (BooleanBinary And (BooleanExpression NotEqual (AliasTerm (Identifier \"server_date\")) (ScalarTerm (String \"0\"))) (BooleanExpression NotEqual (AliasTerm (Identifier \"device_date\")) (ScalarTerm (String \"0\")))) (Binary Divide (Binary Subtract (FunctionTerm (Function \"ISOToUnix\" [FunctionTerm (Function \"CustomFormatToISO\" [AliasTerm (Identifier \"server_date\"),ScalarTerm (String \"YYYY-MM-dd\")])])) (FunctionTerm (Function \"ISOToUnix\" [FunctionTerm (Function \"CustomFormatToISO\" [AliasTerm (Identifier \"device_date\"),ScalarTerm (String \"YYYY-MM-dd\")])]))) (ScalarTerm (Number (Left 86400000)))) (ScalarTerm (Number (Left 0)))) (Identifier \"datediff\")]))]")
 {-
 desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_date, device_date AS device_date, user_id AS user_id, (server_date != '0' AND device_date != '0' ? (ISOToUnix(CustomFormatToISO(server_date,'YYYY-MM-dd'))-ISOToUnix(CustomFormatToISO(device_date,'YYYY-MM-dd')))/86400000 : 0) AS datediff;
 -}
    , testCase "foreach stmt with flatten and function" (testStmt "report = FOREACH report GENERATE FLATTEN(group) AS (date, herd), COUNT(active_users) AS day_visits;"
-                                                                 "Seq [Assignment (Identifier \"report\") (ForeachClause (Identifier \"report\") (GenBlock [Flatten \"group\" (Tuple [Identifier \"date\",Identifier \"herd\"]),FunctionTransform (Function \"COUNT\" [AliasArgument (Identifier \"active_users\")]) (Identifier \"day_visits\")]))]")
+                                                                 "Seq [Assignment (Identifier \"report\") (ForeachClause (Identifier \"report\") (GenBlock [Flatten \"group\" (Tuple [Identifier \"date\",Identifier \"herd\"]),FunctionTransform (Function \"COUNT\" [AliasTerm (Identifier \"active_users\")]) (Identifier \"day_visits\")]))]")
    , testCase "foreach stmt with qualified field names" (testStmt "report = FOREACH report GENERATE report::date AS date, report::herd AS herd, report::day_visits AS day_visits, visits::visits AS visits;"
                                                                   "Seq [Assignment (Identifier \"report\") (ForeachClause (Identifier \"report\") (GenBlock [AliasTransform (Identifier \"report::date\") (Identifier \"date\"),AliasTransform (Identifier \"report::herd\") (Identifier \"herd\"),AliasTransform (Identifier \"report::day_visits\") (Identifier \"day_visits\"),AliasTransform (Identifier \"visits::visits\") (Identifier \"visits\")]))]")
    , testCase "foreach stmt with quoted string" (testStmt "report = FOREACH report GENERATE '$date' AS date, *;"
@@ -61,15 +61,15 @@ desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_dat
                                       "Seq [Assignment (Identifier \"report\") (StreamClause (Identifier \"report\") (Identifier \"RESOLVE\") (TupleDef [Field (Identifier \"day\") CharArray,Field (Identifier \"herd\") CharArray,Field (Identifier \"day_visits\") Int,Field (Identifier \"visits\") Int]))]")
 
    , testCase "store stmt" (testStmt "STORE report INTO '$output' USING ColumnStorage(',');"
-                                     "Seq [Store (Identifier \"report\") (Directory \"$output\") (Function \"ColumnStorage\" [StringArgument (String \",\")])]")
+                                     "Seq [Store (Identifier \"report\") (Directory \"$output\") (Function \"ColumnStorage\" [ScalarTerm (String \",\")])]")
 
    , testCase "register stmt" (testStmt "REGISTER 'lib/datafu-0.0.10.jar';"
                                         "Seq [Register (Library \"lib/datafu-0.0.10.jar\")]")
 
    , testCase "several statements" (testStmt "active_users = LOAD 'warehouse/active_users/daily/point/{$visit_dates}*' USING ColumnStorage(' ') AS (date:chararray, user_id:long);\nactive_users = JOIN users BY user_id, active_users BY user_id;" 
-                                             "Seq [Assignment (Identifier \"active_users\") (LoadClause (Filename \"warehouse/active_users/daily/point/{$visit_dates}*\") (Function \"ColumnStorage\" [StringArgument (String \" \")]) (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"user_id\") Long])),Assignment (Identifier \"active_users\") (InnerJoinClause [Join \"users\" \"user_id\",Join \"active_users\" \"user_id\"])]")
+                                             "Seq [Assignment (Identifier \"active_users\") (LoadClause (Filename \"warehouse/active_users/daily/point/{$visit_dates}*\") (Function \"ColumnStorage\" [ScalarTerm (String \" \")]) (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"user_id\") Long])),Assignment (Identifier \"active_users\") (InnerJoinClause [Join \"users\" \"user_id\",Join \"active_users\" \"user_id\"])]")
    , testCase "case insensitivity of keywords" (testStmt "store report into '$output' using ColumnStorage(',');"
-                                                         "Seq [Store (Identifier \"report\") (Directory \"$output\") (Function \"ColumnStorage\" [StringArgument (String \",\")])]")
+                                                         "Seq [Store (Identifier \"report\") (Directory \"$output\") (Function \"ColumnStorage\" [ScalarTerm (String \",\")])]")
    , testCase "input file path" (testFilePath "example.pig" "example.pig")
 --   , testCase "non existant file path" (testFileError "dummy.pig" "")
    ]
