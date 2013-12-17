@@ -79,6 +79,8 @@ desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_dat
    , testCase "register stmt" (testStmt "REGISTER 'lib/datafu-0.0.10.jar';"
                                         "Seq [Register (Library \"lib/datafu-0.0.10.jar\")]")
 
+   , testCase "filter stmt" (testStmt "users = FILTER users BY registration_date >= '$users_date';"
+                                      "Seq [Assignment (Identifier \"users\") (FilterClause (Identifier \"users\") (BooleanExpression GreaterEqual (AliasTerm (Identifier \"registration_date\")) (ScalarTerm (String \"$users_date\"))))]")
    , testCase "several statements" (testStmt "active_users = LOAD 'warehouse/active_users/daily/point/{$visit_dates}*' USING ColumnStorage(' ') AS (date:chararray, user_id:long);\nactive_users = JOIN users BY user_id, active_users BY user_id;" 
                                              "Seq [Assignment (Identifier \"active_users\") (LoadClause (Filename \"warehouse/active_users/daily/point/{$visit_dates}*\") (Just (Function \"ColumnStorage\" [ScalarTerm (String \" \")])) (Just (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"user_id\") Long]))),Assignment (Identifier \"active_users\") (InnerJoinClause [Join \"users\" \"user_id\",Join \"active_users\" \"user_id\"])]")
    , testCase "case insensitivity of keywords" (testStmt "store report into '$output' using ColumnStorage(',');"

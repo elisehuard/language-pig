@@ -28,6 +28,7 @@ data OpClause = LoadClause Path (Maybe Function) (Maybe TupleDef)
               | InnerJoinClause [Join]
               | StreamClause Alias Alias TupleDef
               | DistinctClause Alias
+              | FilterClause Alias BooleanExpression
               DERIVE
 
 data GenBlock = GenBlock [Transform]

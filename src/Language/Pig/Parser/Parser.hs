@@ -39,6 +39,7 @@ pigLanguageDef = emptyDef {
                                    "STORE", "INTO", "USING",
                                    "REGISTER",
                                    "DISTINCT",
+                                   "FILTER",
                                    "int", "long", "float", "double", "chararray", "bytearray", "*"]
           , Token.reservedOpNames = ["=", "+", "-", "*", "/", "%", "?", ":", "and", "or", "not"]
           , Token.caseSensitive = False
@@ -142,6 +143,7 @@ opClause = loadClause
        <|> groupClause
        <|> streamClause
        <|> distinctClause
+       <|> filterClause
 
 loadClause :: Parser OpClause
 loadClause = LoadClause <$>
@@ -151,7 +153,6 @@ loadClause = LoadClause <$>
                 pigFunc)) <*>
                 (optionMaybe (reserved "AS" *>
                 pigTupleDef))
-
 
 -- foreach: only the block (outer bag) version
 foreachClause :: Parser OpClause
@@ -186,6 +187,13 @@ distinctClause :: Parser OpClause
 distinctClause = DistinctClause <$>
                    (reserved "DISTINCT" *>
                     pigVar)
+
+filterClause :: Parser OpClause
+filterClause = FilterClause <$>
+                (reserved "FILTER" *>
+                    pigVar) <*>
+                (reserved "BY" *>
+                    booleanExpression)
 
 joinTable :: Parser Join
 joinTable = Join <$>
