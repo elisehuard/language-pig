@@ -266,6 +266,7 @@ transform = try(aliasTransform)
          <|> flattenTransform
          <|> tupleFieldGlob
          <|> try(positionalTypeTransform)
+         <|> try(castTransform)
          <|> expressionTransform
          <|> try(functionTransform)
          <|> identityTransform
@@ -314,6 +315,13 @@ positionalTypeTransform = PositionalTypeTransform <$>
                                 integer) <*>
                              (reserved "AS" *>
                                 (Identifier <$> identifier))
+
+castTransform :: Parser Transform
+castTransform = CastTransform <$>
+                  (parens pigType) <*>
+                  (Identifier <$> identifier) <*>
+                  (reserved "AS" *>
+                     field)
 
 -- general expression:
 -- fieldExpression or literal or function or binary operation (+-*/%) or bincond (?:)

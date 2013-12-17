@@ -36,6 +36,9 @@ parserSuite = testGroup "Parser"
 
    , testCase "foreach stmt with ternary if-then-else complex" (testStmt "desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_date, device_date AS device_date, user_id AS user_id, (server_date != '0' AND device_date != '0' ? (ISOToUnix(CustomFormatToISO(server_date,'YYYY-MM-dd'))-ISOToUnix(CustomFormatToISO(device_date,'YYYY-MM-dd')))/86400000 : 0) AS datediff;"
                                                                           "Seq [Assignment (Identifier \"desktop_client_dates\") (ForeachClause (Identifier \"desktop_client\") (GenBlock [AliasTransform (Identifier \"server_date\") (Identifier \"server_date\"),AliasTransform (Identifier \"device_date\") (Identifier \"device_date\"),AliasTransform (Identifier \"user_id\") (Identifier \"user_id\"),ExpressionTransform (BinCond (BooleanBinary And (BooleanExpression NotEqual (AliasTerm (Identifier \"server_date\")) (ScalarTerm (String \"0\"))) (BooleanExpression NotEqual (AliasTerm (Identifier \"device_date\")) (ScalarTerm (String \"0\")))) (Binary Divide (Binary Subtract (FunctionTerm (Function \"ISOToUnix\" [FunctionTerm (Function \"CustomFormatToISO\" [AliasTerm (Identifier \"server_date\"),ScalarTerm (String \"YYYY-MM-dd\")])])) (FunctionTerm (Function \"ISOToUnix\" [FunctionTerm (Function \"CustomFormatToISO\" [AliasTerm (Identifier \"device_date\"),ScalarTerm (String \"YYYY-MM-dd\")])]))) (ScalarTerm (Number (Left 86400000)))) (ScalarTerm (Number (Left 0)))) (Identifier \"datediff\")]))]")
+
+  , testCase "foreach stmt with cast" (testStmt "i18n = FOREACH i18n GENERATE (long)user_id AS user_id:long, language_code, accept_language, ip;"
+                                                "Seq [Assignment (Identifier \"i18n\") (ForeachClause (Identifier \"i18n\") (GenBlock [CastTransform Long (Identifier \"user_id\") (Field (Identifier \"user_id\") (Just Long)),IdentityTransform (Identifier \"language_code\"),IdentityTransform (Identifier \"accept_language\"),IdentityTransform (Identifier \"ip\")]))]")
 {-
 desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_date, device_date AS device_date, user_id AS user_id, (server_date != '0' AND device_date != '0' ? (ISOToUnix(CustomFormatToISO(server_date,'YYYY-MM-dd'))-ISOToUnix(CustomFormatToISO(device_date,'YYYY-MM-dd')))/86400000 : 0) AS datediff;
 -}
@@ -75,6 +78,7 @@ desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_dat
 
    , testCase "distinct stmt" (testStmt "desktop_client_dates3 =  DISTINCT desktop_client_dates2;"
                                         "Seq [Assignment (Identifier \"desktop_client_dates3\") (DistinctClause (Identifier \"desktop_client_dates2\"))]")
+
    , testCase "store stmt" (testStmt "STORE report INTO '$output' USING ColumnStorage(',');"
                                      "Seq [Store (Identifier \"report\") (Directory \"$output\") (Function \"ColumnStorage\" [ScalarTerm (String \",\")])]")
 

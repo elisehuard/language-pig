@@ -38,6 +38,7 @@ data GroupBy = SingleColumn Alias
              | MultipleColumn Tuple
              DERIVE
 
+-- note: maybe every Alias at the end of transform should be a Field
 data Transform = Flatten String Tuple -- foreach flatten transform
                | TupleFieldGlob
                | AliasTransform Alias Alias
@@ -46,6 +47,7 @@ data Transform = Flatten String Tuple -- foreach flatten transform
                | EnvTransform Scalar Alias
                | IdentityTransform Alias
                | PositionalTypeTransform SimpleType Pos Alias
+               | CastTransform SimpleType Alias Field
                DERIVE
 
 type Pos = Integer
