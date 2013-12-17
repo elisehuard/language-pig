@@ -44,6 +44,9 @@ desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_dat
    , testCase "foreach stmt with quoted string" (testStmt "report = FOREACH report GENERATE '$date' AS date, *;"
                                                           "Seq [Assignment (Identifier \"report\") (ForeachClause (Identifier \"report\") (GenBlock [EnvTransform (String \"$date\") (Identifier \"date\"),TupleFieldGlob]))]")
 
+   , testCase "foreach stmt with field positions" (testStmt "users = FOREACH users GENERATE (long)$0 AS user_id, (chararray)$7 AS registration_date;"
+                                                            "Seq [Assignment (Identifier \"users\") (ForeachClause (Identifier \"users\") (GenBlock [PositionalTypeTransform Long 0 (Identifier \"user_id\"),PositionalTypeTransform CharArray 7 (Identifier \"registration_date\")]))]")
+
    , testCase "join stmt" (testStmt "active_users = JOIN users BY user_id, active_users BY user_id;"
                                     "Seq [Assignment (Identifier \"active_users\") (InnerJoinClause [Join \"users\" \"user_id\",Join \"active_users\" \"user_id\"])]")
 

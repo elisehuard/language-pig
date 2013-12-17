@@ -44,7 +44,10 @@ data Transform = Flatten String Tuple -- foreach flatten transform
                | FunctionTransform Function Alias
                | EnvTransform Scalar Alias
                | IdentityTransform Alias
+               | PositionalTypeTransform SimpleType Pos Alias
                DERIVE
+
+type Pos = Integer
 
 data Join = Join String String
             DERIVE

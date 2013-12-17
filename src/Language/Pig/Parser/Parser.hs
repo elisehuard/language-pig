@@ -49,8 +49,8 @@ lexer = Token.makeTokenParser pigLanguageDef
 identifier = Token.identifier lexer
 reserved = Token.reserved lexer
 reservedOp = Token.reservedOp lexer
-integer = Token.integer lexer
 naturalOrFloat = Token.naturalOrFloat lexer
+integer = Token.integer lexer
 semi = Token.semi lexer
 comma = Token.comma lexer
 whiteSpace = Token.whiteSpace lexer
@@ -256,6 +256,7 @@ transform :: Parser Transform
 transform = try(aliasTransform)
          <|> flattenTransform
          <|> tupleFieldGlob
+         <|> try(positionalTypeTransform)
          <|> expressionTransform
          <|> try(functionTransform)
          <|> identityTransform
@@ -296,6 +297,14 @@ envTransform = EnvTransform <$>
 identityTransform :: Parser Transform
 identityTransform = IdentityTransform <$>
                       (Identifier <$> pigIdentifier)
+
+positionalTypeTransform :: Parser Transform
+positionalTypeTransform = PositionalTypeTransform <$>
+                             (parens pigType) <*>
+                             (char '$' *>
+                                integer) <*>
+                             (reserved "AS" *>
+                                (Identifier <$> identifier))
 
 -- general expression:
 -- fieldExpression or literal or function or binary operation (+-*/%) or bincond (?:)
