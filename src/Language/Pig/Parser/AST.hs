@@ -22,7 +22,7 @@ data Statement = Assignment Alias OpClause
                | Register Library
                DERIVE
 
-data OpClause = LoadClause Path Function TupleDef
+data OpClause = LoadClause Path (Maybe Function) (Maybe TupleDef)
               | ForeachClause Alias GenBlock
               | GroupClause Alias GroupBy
               | InnerJoinClause [Join]

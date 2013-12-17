@@ -14,11 +14,13 @@ import Language.Pig.Parser.AST
 parserSuite :: Test
 parserSuite = testGroup "Parser"
    [testCase "load statement 1" (testStmt "users = LOAD 'sorted_log/user_registration/$date/*' USING LogStorage() AS (date:chararray, time:chararray, user_id:long);" 
-                                          "Seq [Assignment (Identifier \"users\") (LoadClause (Filename \"sorted_log/user_registration/$date/*\") (Function \"LogStorage\" []) (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"time\") CharArray,Field (Identifier \"user_id\") Long]))]")
+                                          "Seq [Assignment (Identifier \"users\") (LoadClause (Filename \"sorted_log/user_registration/$date/*\") (Just (Function \"LogStorage\" [])) (Just (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"time\") CharArray,Field (Identifier \"user_id\") Long])))]")
 
    , testCase "load statement 2" (testStmt "active_users = LOAD 'warehouse/active_users/daily/point/{$visit_dates}*' USING ColumnStorage(' ') AS (date:chararray, user_id:long);"
-                                           "Seq [Assignment (Identifier \"active_users\") (LoadClause (Filename \"warehouse/active_users/daily/point/{$visit_dates}*\") (Function \"ColumnStorage\" [ScalarTerm (String \" \")]) (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"user_id\") Long]))]")
+                                           "Seq [Assignment (Identifier \"active_users\") (LoadClause (Filename \"warehouse/active_users/daily/point/{$visit_dates}*\") (Just (Function \"ColumnStorage\" [ScalarTerm (String \" \")])) (Just (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"user_id\") Long])))]")
 
+   , testCase "bare load statement" (testStmt "users = LOAD '$users_input' USING ColumnStorage(' ');"
+                                              "Seq [Assignment (Identifier \"users\") (LoadClause (Filename \"$users_input\") (Just (Function \"ColumnStorage\" [ScalarTerm (String \" \")])) Nothing)]")
    , testCase "foreach stmt with flatten" (testStmt "users = FOREACH users GENERATE FLATTEN(group) AS (date, herd);" 
                                                     "Seq [Assignment (Identifier \"users\") (ForeachClause (Identifier \"users\") (GenBlock [Flatten \"group\" (Tuple [Identifier \"date\",Identifier \"herd\"])]))]")
 
@@ -75,7 +77,7 @@ desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_dat
                                         "Seq [Register (Library \"lib/datafu-0.0.10.jar\")]")
 
    , testCase "several statements" (testStmt "active_users = LOAD 'warehouse/active_users/daily/point/{$visit_dates}*' USING ColumnStorage(' ') AS (date:chararray, user_id:long);\nactive_users = JOIN users BY user_id, active_users BY user_id;" 
-                                             "Seq [Assignment (Identifier \"active_users\") (LoadClause (Filename \"warehouse/active_users/daily/point/{$visit_dates}*\") (Function \"ColumnStorage\" [ScalarTerm (String \" \")]) (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"user_id\") Long])),Assignment (Identifier \"active_users\") (InnerJoinClause [Join \"users\" \"user_id\",Join \"active_users\" \"user_id\"])]")
+                                             "Seq [Assignment (Identifier \"active_users\") (LoadClause (Filename \"warehouse/active_users/daily/point/{$visit_dates}*\") (Just (Function \"ColumnStorage\" [ScalarTerm (String \" \")])) (Just (TupleDef [Field (Identifier \"date\") CharArray,Field (Identifier \"user_id\") Long]))),Assignment (Identifier \"active_users\") (InnerJoinClause [Join \"users\" \"user_id\",Join \"active_users\" \"user_id\"])]")
    , testCase "case insensitivity of keywords" (testStmt "store report into '$output' using ColumnStorage(',');"
                                                          "Seq [Store (Identifier \"report\") (Directory \"$output\") (Function \"ColumnStorage\" [ScalarTerm (String \",\")])]")
    , testCase "input file path" (testFilePath "example.pig" "example.pig")

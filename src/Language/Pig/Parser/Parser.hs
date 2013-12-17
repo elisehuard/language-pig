@@ -147,10 +147,10 @@ loadClause :: Parser OpClause
 loadClause = LoadClause <$>
                 (reserved "LOAD" *>
                 pigQuotedString Filename) <*>
-                (reserved "USING" *>
-                pigFunc) <*>
-                (reserved "AS" *>
-                pigTupleDef)
+                (optionMaybe (reserved "USING" *>
+                pigFunc)) <*>
+                (optionMaybe (reserved "AS" *>
+                pigTupleDef))
 
 
 -- foreach: only the block (outer bag) version

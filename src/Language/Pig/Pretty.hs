@@ -75,6 +75,10 @@ instance Treeable Path where
 instance Treeable Command where
   toTree (Exec s) = Node ("execute command: " ++ s) []
 
+instance (Treeable t) => Treeable (Maybe t) where
+  toTree (Just a) = toTree a
+  toTree (Nothing) = Node "nothing" []
+
 instance Treeable Function where
   toTree (Function s a) = Node ("function " ++ s) (map toTree a)
 
