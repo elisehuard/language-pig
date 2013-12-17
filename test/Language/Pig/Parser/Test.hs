@@ -53,7 +53,10 @@ desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_dat
                                                             "Seq [Assignment (Identifier \"users\") (ForeachClause (Identifier \"users\") (GenBlock [PositionalTypeTransform Long 0 (Identifier \"user_id\"),PositionalTypeTransform CharArray 7 (Identifier \"registration_date\")]))]")
 
    , testCase "join stmt" (testStmt "active_users = JOIN users BY user_id, active_users BY user_id;"
-                                    "Seq [Assignment (Identifier \"active_users\") (InnerJoinClause [Join \"users\" \"user_id\",Join \"active_users\" \"user_id\"])]")
+                                    "Seq [Assignment (Identifier \"active_users\") (JoinClause [Join \"users\" \"user_id\" Nothing,Join \"active_users\" \"user_id\" Nothing])]")
+
+   , testCase "outer join stmt" (testStmt "today = JOIN users BY user_id LEFT, today BY user_id;"
+                                          "Seq [Assignment (Identifier \"today\") (JoinClause [Join \"users\" \"user_id\" (Just LeftJoin),Join \"today\" \"user_id\" Nothing])]")
 
    , testCase "group stmt by one field" (testStmt "visits = GROUP active_users BY herd;"
                                                   "Seq [Assignment (Identifier \"visits\") (GroupClause (Identifier \"active_users\") (SingleColumn (Identifier \"herd\")))]")
@@ -88,7 +91,7 @@ desktop_client_dates = FOREACH desktop_client GENERATE server_date AS server_dat
    , testCase "filter stmt" (testStmt "users = FILTER users BY registration_date >= '$users_date';"
                                       "Seq [Assignment (Identifier \"users\") (FilterClause (Identifier \"users\") (BooleanExpression GreaterEqual (AliasTerm (Identifier \"registration_date\")) (ScalarTerm (String \"$users_date\"))))]")
    , testCase "several statements" (testStmt "active_users = LOAD 'warehouse/active_users/daily/point/{$visit_dates}*' USING ColumnStorage(' ') AS (date:chararray, user_id:long);\nactive_users = JOIN users BY user_id, active_users BY user_id;" 
-                                             "Seq [Assignment (Identifier \"active_users\") (LoadClause (Filename \"warehouse/active_users/daily/point/{$visit_dates}*\") (Just (Function \"ColumnStorage\" [ScalarTerm (String \" \")])) (Just (TupleDef [Field (Identifier \"date\") (Just CharArray),Field (Identifier \"user_id\") (Just Long)]))),Assignment (Identifier \"active_users\") (InnerJoinClause [Join \"users\" \"user_id\",Join \"active_users\" \"user_id\"])]")
+                                             "Seq [Assignment (Identifier \"active_users\") (LoadClause (Filename \"warehouse/active_users/daily/point/{$visit_dates}*\") (Just (Function \"ColumnStorage\" [ScalarTerm (String \" \")])) (Just (TupleDef [Field (Identifier \"date\") (Just CharArray),Field (Identifier \"user_id\") (Just Long)]))),Assignment (Identifier \"active_users\") (JoinClause [Join \"users\" \"user_id\" Nothing,Join \"active_users\" \"user_id\" Nothing])]")
    , testCase "case insensitivity of keywords" (testStmt "store report into '$output' using ColumnStorage(',');"
                                                          "Seq [Store (Identifier \"report\") (Directory \"$output\") (Function \"ColumnStorage\" [ScalarTerm (String \",\")])]")
    , testCase "input file path" (testFilePath "example.pig" "example.pig")

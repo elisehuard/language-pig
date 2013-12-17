@@ -25,7 +25,7 @@ data Statement = Assignment Alias OpClause
 data OpClause = LoadClause Path (Maybe Function) (Maybe TupleDef)
               | ForeachClause Alias GenBlock
               | GroupClause Alias GroupBy
-              | InnerJoinClause [Join]
+              | JoinClause [Join]
               | StreamClause Alias Alias TupleDef
               | DistinctClause Alias
               | FilterClause Alias BooleanExpression
@@ -52,8 +52,11 @@ data Transform = Flatten String Tuple -- foreach flatten transform
 
 type Pos = Integer
 
-data Join = Join String String
+data Join = Join String String (Maybe OuterJoinType)
             DERIVE
+
+data OuterJoinType = LeftJoin | RightJoin | FullJoin
+                     DERIVE
 
 data DefineSpec = Ship [Path]
                   DERIVE

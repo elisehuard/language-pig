@@ -43,7 +43,7 @@ instance Arbitrary OpClause where
   arbitrary = oneof [ LoadClause <$> arbitrary <*> arbitrary <*> arbitrary
                     , ForeachClause <$> arbitrary <*> arbitrary
                     , GroupClause <$> arbitrary <*> arbitrary
-                    , InnerJoinClause <$> arbitrary
+                    , JoinClause <$> arbitrary
                     , StreamClause <$> arbitrary <*> arbitrary <*> arbitrary]
 
 instance Arbitrary GenBlock where
@@ -66,7 +66,10 @@ instance Arbitrary Transform where
                     , EnvTransform <$> arbitrary <*> arbitrary]
 
 instance Arbitrary Join where
-  arbitrary = Join <$> arbitrary <*> arbitrary
+  arbitrary = Join <$> arbitrary <*> arbitrary <*> arbitrary
+
+instance Arbitrary OuterJoinType where
+  arbitrary = oneof [ return LeftJoin, return RightJoin, return FullJoin ]
 
 instance Arbitrary DefineSpec where
   arbitrary = Ship <$> arbitrary

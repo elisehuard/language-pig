@@ -32,6 +32,7 @@ pigLanguageDef = emptyDef {
           , Token.reservedNames = ["LOAD", "USING", "AS",
                                    "FOREACH", "GENERATE", "FLATTEN",
                                    "JOIN", "BY",
+                                   "LEFT", "RIGHT", "FULL",
                                    "GROUP",
                                    "DESCRIBE", "SHIP",
                                    "DEFINE",
@@ -139,7 +140,7 @@ register = Register <$>
 opClause :: Parser OpClause
 opClause = loadClause
        <|> foreachClause
-       <|> innerJoinClause
+       <|> joinClause
        <|> groupClause
        <|> streamClause
        <|> distinctClause
@@ -162,10 +163,10 @@ foreachClause = ForeachClause <$>
                     (reserved "GENERATE" *>
                     (GenBlock <$> sepBy transform comma))
 
-innerJoinClause :: Parser OpClause
-innerJoinClause = InnerJoinClause <$>
-                    (reserved "JOIN" *>
-                    sepBy joinTable comma)
+joinClause :: Parser OpClause
+joinClause = JoinClause <$>
+                (reserved "JOIN" *>
+                sepBy joinTable comma)
 
 groupClause :: Parser OpClause
 groupClause = GroupClause <$>
@@ -199,7 +200,13 @@ joinTable :: Parser Join
 joinTable = Join <$>
                pigIdentifier <*>
                (reserved "BY" *>
-               pigIdentifier)
+                   pigIdentifier) <*>
+               optionMaybe outerJoinType
+
+outerJoinType :: Parser OuterJoinType
+outerJoinType = (reserved "LEFT" >> return LeftJoin) <|>
+                (reserved "RIGHT" >> return RightJoin) <|>
+                (reserved "FULL" >> return FullJoin)
 
 defineSpec :: Parser [DefineSpec]
 defineSpec = many shipClause

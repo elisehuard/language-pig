@@ -34,7 +34,7 @@ instance Treeable OpClause where
   toTree (LoadClause a b c) = Node "LOAD clause" [toTree a, toTree b, toTree c]
   toTree (ForeachClause a b) = Node "FOREACH clause" [toTree a, toTree b]
   toTree (GroupClause a b) = Node "GROUP clause" [toTree a, toTree b]
-  toTree (InnerJoinClause joins) = Node "JOIN clause" (map toTree joins)
+  toTree (JoinClause joins) = Node "JOIN clause" (map toTree joins)
   toTree (StreamClause a b c) = Node "STREAM clause" [toTree a, toTree b, toTree c]
 
 instance Treeable GenBlock where
@@ -53,7 +53,8 @@ instance Treeable Transform where
   toTree (EnvTransform a b) = Node "name variable" [toTree a, toTree b]
 
 instance Treeable Join where
-  toTree (Join a b) = Node ("join " ++ a ++ " by " ++ b) []
+  toTree (Join a b (Just c)) = Node (show c ++ " " ++ a ++ " by " ++ b) []
+  toTree (Join a b Nothing) = Node ("join " ++ a ++ " by " ++ b) []
 
 instance Treeable Aliasable where
   toTree (AliasCommand p) = toTree p
