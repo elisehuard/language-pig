@@ -245,9 +245,10 @@ tupleDef = sepBy field comma
 field :: Parser Field
 field = Field <$>
             pigVar <*>
-            ( char ':' *>
-              whiteSpace *>
-              pigType )
+            optionMaybe
+              ( char ':' *>
+                whiteSpace *>
+                pigType )
 
 pigType :: Parser SimpleType
 pigType = pigSimpleType "int" Int <|>

@@ -89,7 +89,8 @@ instance Treeable Tuple where
   toTree (Tuple t) = Node "tuple" (map toTree t)
 
 instance Treeable Field where
-  toTree (Field (Identifier s) t) = Node ("field: " ++ s ++ " of type " ++ show t) []
+  toTree (Field (Identifier s) (Just t)) = Node ("field: " ++ s ++ " of type " ++ show t) []
+  toTree (Field (Identifier s) Nothing) = Node ("field: " ++ s) []
 
 instance Treeable Expression where
   toTree (Unary o e) = Node "unary expression" [toTree o, toTree e]

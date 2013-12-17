@@ -82,7 +82,7 @@ data TupleDef = TupleDef [Field]
 data Tuple = Tuple [Alias]
              DERIVE
 
-data Field = Field Alias SimpleType
+data Field = Field Alias (Maybe SimpleType)
              DERIVE
 
 data Expression = Unary Operator Expression
